@@ -170,6 +170,7 @@ void buildTable()
 				float dw = 3.0f/9.0f;
 				float x = -dx, w = 5.0f/9.0f;
 				float sum = 0;
+				float sum = 0;
 				for (int i = 0; i < 3; i++) {
 					//cout << "x" << i << " = " << x << ", w" << i << " = " << w << endl;
 					float pParam = (uB - uA) / 2 * x + (uA + uB) / 2;
