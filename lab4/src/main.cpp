@@ -136,6 +136,13 @@ Eigen::Matrix4f getRotateY(float radians)
 	return M;
 }
 
+Eigen::Vector4f getUVec(float u) {
+	return Eigen::Vector4f(1, u, u*u, u*u*u);
+}
+Eigen::Vector4f getUVecPrime(float u) {
+	return Eigen::Vector4f(0, 1, 2*u, 3*u*u);
+}
+
 void buildTable()
 {
 	usTable.clear();
@@ -147,32 +154,43 @@ void buildTable()
 	if(ncps >= 4) {
 		//BUILD TABLE
 		usTable.push_back(make_pair(0.0f, totalLen));
-		for (int i = 0; i < ncps-3; i++) {
-			for (int idx = i; idx < i+4; idx++) {
-				G(0, idx-i) = cps[idx](0);
-				G(1, idx-i) = cps[idx](1);
-				G(2, idx-i) = cps[idx](2);
+		for (int cp = 0; cp < ncps-3; cp++) {
+			for (int idx = cp; idx < cp+4; idx++) {
+				G(0, idx-cp) = cps[idx](0);
+				G(1, idx-cp) = cps[idx](1);
+				G(2, idx-cp) = cps[idx](2);
 			}
-			for (float u = 0.2f; u < 1.0001; u += 0.2f) {
-				Eigen::Vector4f uVec1;
-				float u1 = u;
-				uVec1(0) = 1;
-				uVec1(1) = u1;
-				uVec1(2) = u1*u1;
-				uVec1(3) = u1*u1*u1;
-				Eigen::Vector4f uVec2;
-				float u2 = u - 0.2f;
-				uVec2(0) = 1;
-				uVec2(1) = u2;
-				uVec2(2) = u2*u2;
-				uVec2(3) = u2*u2*u2;
+			for (float u = 0.2f; u < 1.0001f; u += 0.2f) {
+				float uA = u, uB = u - 0.2f;
+				Eigen::Vector4f uVecA = getUVec(uA);
+				Eigen::Vector4f uVecB = getUVec(uB);
+				Eigen::Vector3f pPrime;
 
-				Eigen::Vector3f p1 = G*B*uVec1;
-				Eigen::Vector3f p2 = G*B*uVec2;
-				float s = (p1-p2).norm();
+				float dx = sqrt(3.0f/5.0f);
+				float dw = 3.0f/9.0f;
+				float x = -dx, w = 5.0f/9.0f;
+				float sum = 0;
+				for (int i = 0; i < 3; i++) {
+					//cout << "x" << i << " = " << x << ", w" << i << " = " << w << endl;
+					float pParam = (uB - uA) / 2 * x + (uA + uB) / 2;
+					Eigen::Vector4f uVecPrime = getUVecPrime(pParam);
+					pPrime = G*B*uVecPrime;
+					sum += w * pPrime.norm();
+					
+					x += dx;
+					w += dw;
+					dw = -dw;
+				}
+				//cout<<endl;
+				float s = (uB - uA) / 2 * sum;
+
+				//Eigen::Vector3f p1 = G*B*uVecA;
+				//Eigen::Vector3f p2 = G*B*uVecB;
+
+
+				//totalLen += (p1-p2).norm();
 				totalLen += s;
-
-				usTable.push_back(make_pair(i + u, totalLen));
+				usTable.push_back(make_pair(cp + u, totalLen));
 			}
 		}
 
