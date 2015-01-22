@@ -161,7 +161,7 @@ void buildTable()
 				G(2, idx-cp) = cps[idx](2);
 			}
 			for (float u = 0.2f; u < 1.0001f; u += 0.2f) {
-				float uA = u, uB = u - 0.2f;
+				float uA = u - 0.2, uB = u;
 				Eigen::Vector4f uVecA = getUVec(uA);
 				Eigen::Vector4f uVecB = getUVec(uB);
 				Eigen::Vector3f pPrime;
@@ -171,7 +171,6 @@ void buildTable()
 				float x = -dx, w = 5.0f/9.0f;
 				float sum = 0;
 				for (int i = 0; i < 3; i++) {
-					//cout << "x" << i << " = " << x << ", w" << i << " = " << w << endl;
 					float pParam = (uB - uA) / 2 * x + (uA + uB) / 2;
 					Eigen::Vector4f uVecPrime = getUVecPrime(pParam);
 					pPrime = G*B*uVecPrime;
@@ -181,14 +180,12 @@ void buildTable()
 					w += dw;
 					dw = -dw;
 				}
-				//cout<<endl;
 				float s = (uB - uA) / 2 * sum;
 
 				//Eigen::Vector3f p1 = G*B*uVecA;
 				//Eigen::Vector3f p2 = G*B*uVecB;
 
-
-				//totalLen += (p1-p2).norm();
+				//totalLen += (p2-p1).norm();
 				totalLen += s;
 				usTable.push_back(make_pair(cp + u, totalLen));
 			}
@@ -204,11 +201,19 @@ void buildTable()
 
 float s2u(float s)
 {
-	//
-	// IMPLEMENT ME
-	//
-	
-	return 0.0f;
+	pair<float, float> start = usTable[0], end = usTable[1];
+	for (int i = 0; i < (int)usTable.size() - 1; i++) {
+		pair<float, float> row1 = usTable[i];
+		pair<float, float> row2 = usTable[i+1];
+		if (s > row1.second && s < row2.second) {
+			start = usTable[i];
+			end = usTable[i+1];
+			break;
+		}
+	}
+	float a = (s - start.second) / (end.second - start.second);
+	float u = (1 - a) * start.first + a * end.first;
+	return u;
 }
 
 void drawGL()
