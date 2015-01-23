@@ -11,14 +11,28 @@ public:
    Shape();
    virtual ~Shape();
    void addObj(const std::string &meshName);
+   void addObj(const std::string &meshName, Eigen::Vector3f center, Eigen::Vector3f axis);
    void init();
    void draw(Program &prog, MatrixStack &MV, float t);
    
 private:
-   /* Specific for helicopters */
-   void rotatePropellers(Program &prog, MatrixStack &MV, float t) {
-   std::vector<ShapeObj> objs;
-   MatrixStack stack;
+   class Component {
+   public:
+      Component();
+      Component(Eigen::Vector3f center, Eigen::Vector3f axis);
+      virtual ~Component();
+
+      ShapeObj obj;
+      bool spinning;
+      Eigen::Vector3f center;
+      Eigen::Vector3f axis;
+   };
+   class KeyFrame {
+   public:
+
+   };
+   std::vector<Component> objs;
+   std::vector<KeyFrame> frames;
 };
 
 #endif

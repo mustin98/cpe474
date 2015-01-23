@@ -8,44 +8,61 @@ using namespace std;
 Shape::Shape() {
 }
 
-Shape::~Shape() {
-}
+Shape::~Shape() {}
 
-void Shape::addObj(const std::string &meshName) {
-   ShapeObj toAdd;
+void Shape::addObj(const string &meshName) {
+   Component toAdd;
 
-   toAdd.load(meshName);
+   toAdd.obj.load(meshName);
    objs.push_back(toAdd);
 }
 
-void Shape::addObj(const std::string &meshName, Eigen::Vector3f &axis) {
-   ShapeObj toAdd(axis);
+void Shape::addObj(const string &meshName, Eigen::Vector3f center, Eigen::Vector3f axis) {
+   Component toAdd(center, axis);
 
-   toAdd.load(meshName);
+   toAdd.obj.load(meshName);
    objs.push_back(toAdd);
 }
 
 void Shape::init() {
-   for (std::vector<ShapeObj>::iterator it = objs.begin(); it != objs.end(); ++it) {
-      it->init();
+   for (vector<Component>::iterator it = objs.begin(); it != objs.end(); ++it) {
+      it->obj.init();
    }
 }
 
-void Shape::rotatePropellers(Program &prog, MatrixStack &MV, float t) {
-   float angle = std::fmod(t*25, M_PI*2);
-
-
-}
-
 void Shape::draw(Program &prog, MatrixStack &MV, float t) {
+   float angle = fmod(t*5, M_PI*2);
+
    MV.pushMatrix();
    //Eigen::Matrix4f R = Eigen::Matrix4f::Identity();
    //R.block<3,3>(0,0) = q0.toRotationMatrix();
    //MV.multMatrix(R);
-   MV.rotate(angle, Eigen::Vector3f(0, 1, 0));
-   glUniformMatrix4fv(prog.getUniform("MV"), 1, GL_FALSE, MV.topMatrix().data());
-   for (std::vector<ShapeObj>::iterator it = objs.begin(); it != objs.end(); ++it) {
-      it->draw(prog.getAttribute("vertPos"), prog.getAttribute("vertNor"), -1);
+   for (vector<Component>::iterator it = objs.begin(); it != objs.end(); ++it) {
+      MV.pushMatrix();
+
+      // Last transform done first
+      if (it->spinning) {
+         MV.translate(it->center);
+         MV.rotate(angle * 2.5, it->axis);
+         MV.translate(-it->center);
+      }
+      glUniformMatrix4fv(prog.getUniform("MV"), 1, GL_FALSE, MV.topMatrix().data());
+      it->obj.draw(prog.getAttribute("vertPos"), prog.getAttribute("vertNor"), -1);
+      MV.popMatrix();
    }  
    MV.popMatrix();
 }
+
+Shape::Component::Component() : 
+   spinning(false)
+{
+}
+
+Shape::Component::Component(Eigen::Vector3f center, Eigen::Vector3f axis) :
+   spinning(true),
+   center(center),
+   axis(axis)
+{
+}
+
+Shape::Component::~Component() {}

@@ -40,8 +40,8 @@ void loadScene()
 	helicopter.load("../models/helicopter_body1.obj");
 	helicopter2.addObj("../models/helicopter_body1.obj");
 	helicopter2.addObj("../models/helicopter_body2.obj");
-	helicopter2.addObj("../models/helicopter_prop1.obj");
-	helicopter2.addObj("../models/helicopter_prop2.obj");
+	helicopter2.addObj("../models/helicopter_prop1.obj", Eigen::Vector3f(-0.0133, 0.4819, 0), Eigen::Vector3f(0,1,0));
+	helicopter2.addObj("../models/helicopter_prop2.obj", Eigen::Vector3f(0.6228, 0.1179, 0.1365), Eigen::Vector3f(0,0,1));
 	prog.setShaderNames("simple_vert.glsl", "simple_frag.glsl");
 }
 

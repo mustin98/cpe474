@@ -9,18 +9,7 @@ ShapeObj::ShapeObj() :
 	posBufID(0),
 	norBufID(0),
 	texBufID(0),
-	indBufID(0),
-	spinning(false)
-{
-}
-
-ShapeObj::ShapeObj(Eigen::Vector3f &axis) :
-	posBufID(0),
-	norBufID(0),
-	texBufID(0),
-	indBufID(0),
-	spinning(true),
-	axis(axis)
+	indBufID(0)
 {
 }
 
