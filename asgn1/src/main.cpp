@@ -29,43 +29,17 @@ int height = 1;
 
 Program prog;
 Camera camera;
-Shape helicopter2;
-// Control points
-vector<Eigen::Vector3f> cps;
-
-Eigen::Matrix4f getCatmullMatrix() {
-	Eigen::Matrix4f B;
-	B(0,0) = 0;
-	B(0,1) = -1;
-	B(0,2) = 2;
-	B(0,3) = -1;
-
-	B(1,0) = 2;
-	B(1,1) = 0;
-	B(1,2) = -5;
-	B(1,3) = 3;
-	
-	B(2,0) = 0;
-	B(2,1) = 1;
-	B(2,2) = 4;
-	B(2,3) = -3;
-	
-	B(3,0) = 0;
-	B(3,1) = 0;
-	B(3,2) = -1;
-	B(3,3) = 1;
-	return B * 0.5;
-}
+Shape helicopter;
 
 void loadScene()
 {
 	t = 0.0f;
 	keyToggles['c'] = true;
 	
-	helicopter2.addObj("../models/helicopter_body1.obj");
-	helicopter2.addObj("../models/helicopter_body2.obj");
-	helicopter2.addObj("../models/helicopter_prop1.obj", Eigen::Vector3f(-0.0133, 0.4819, 0), Eigen::Vector3f(0,1,0));
-	helicopter2.addObj("../models/helicopter_prop2.obj", Eigen::Vector3f(0.6228, 0.1179, 0.1365), Eigen::Vector3f(0,0,1));
+	helicopter.addObj("../models/helicopter_body1.obj");
+	helicopter.addObj("../models/helicopter_body2.obj");
+	helicopter.addObj("../models/helicopter_prop1.obj", Eigen::Vector3f(-0.0133, 0.4819, 0), Eigen::Vector3f(0,1,0));
+	helicopter.addObj("../models/helicopter_prop2.obj", Eigen::Vector3f(0.6228, 0.1179, 0.1365), Eigen::Vector3f(0,0,1));
 	prog.setShaderNames("simple_vert.glsl", "simple_frag.glsl");
 }
 
@@ -84,14 +58,18 @@ void initGL()
 	// Intialize the shapes
 	//////////////////////////////////////////////////////
 	
-	helicopter2.init();
-	cps.push_back(Eigen::Vector3f(0,0,0));
-	cps.push_back(Eigen::Vector3f(0,0,0));
-	cps.push_back(Eigen::Vector3f(.5,.5,.5));
-	cps.push_back(Eigen::Vector3f(.6,.7,.8));
-	cps.push_back(Eigen::Vector3f(.8,.6,-.7));
-	cps.push_back(Eigen::Vector3f(0,0,0));
-	cps.push_back(Eigen::Vector3f(0,0,0));
+	Eigen::Vector3f x_axis;
+	Eigen::Vector3f y_axis;
+	Eigen::Vector3f z_axis;
+	x_axis << 1, 0, 0;
+	y_axis << 0, 1, 0;
+	z_axis << 0, 0, 1;
+
+	helicopter.init();
+	helicopter.addCP(Eigen::Vector3f(0, 0, 0), Eigen::AngleAxisf(180.0f/180.0f*M_PI, y_axis));
+	helicopter.addCP(Eigen::Vector3f(2, 0, 0), Eigen::AngleAxisf(180.0f/180.0f*M_PI, x_axis));
+	helicopter.addCP(Eigen::Vector3f(0, 2, 2), Eigen::AngleAxisf(180.0f/180.0f*M_PI, z_axis));
+	helicopter.addCP(Eigen::Vector3f(-1.5, -.8, -1), Eigen::AngleAxisf(180.0f/180.0f*M_PI, y_axis));
 
 	
 	//////////////////////////////////////////////////////
@@ -183,9 +161,12 @@ void drawGL()
 	glEnd();
 	glLineWidth(1);
 	
+	if (keyToggles['k']) {
+		helicopter.drawSpline();
+	}
+
 	// Pop modelview matrix
 	glPopMatrix();
-	
 	// Pop projection matrix
 	glMatrixMode(GL_PROJECTION);
 	glPopMatrix();
@@ -213,106 +194,6 @@ void drawGL()
 	glMatrixMode(GL_PROJECTION);
 	glPopMatrix();
 	P.popMatrix();
-	
-	// Draw control points
-	int ncps = (int)cps.size();
-	glPointSize(3.0f);
-	glColor3f(0.0f, 0.0f, 0.0f);
-	glBegin(GL_POINTS);
-	for(int i = 0; i < ncps; ++i) {
-		Eigen::Vector3f cp = cps[i];
-		glVertex3f(cp(0), cp(1), cp(2));
-	}
-	glEnd();	
-	// 4 by 4 matrix
-	Eigen::Vector4f uVec;
-	Eigen::Vector4f uVec1;
-	Eigen::Vector4f uVec2;
-	// 4 by 1 vector
-	
-	// Draw polyline
-	glLineWidth(1.0f);
-	if(keyToggles['l'] &&  ncps >= 4) {
-		// Fill in G, B, and uVec
-		Eigen::Matrix4f B;
-		Eigen::MatrixXf G(3,4);
-		B = getCatmullMatrix();
-			for (int i = 0; i <= ncps - 4 && ncps >= 4; i++) {
-				for (int idx = i; idx < i + 4; idx++) {
-					G(0,idx - i) = cps[idx](0);
-					G(1,idx - i) = cps[idx](1);
-					G(2,idx - i) = cps[idx](2);
-				}		
-				glBegin(GL_LINE_STRIP);
-				glColor3f(1.0f, 0.0f, 1.0f);
-				for (float u = 0; u < 1; u += 0.01) {
-					uVec(0) = 1;
-					uVec(1) = u;
-					uVec(2) = u*u;
-					uVec(3) = u*u*u;
-					Eigen::Vector3f p = G*B*uVec;
-					
-					// 3 by 1 vector
-					glVertex3fv(p.data());
-				}
-				glEnd();
-			}
-			float kfloat;
-			float u = std::modf(std::fmod(t*0.01f, ncps - 3.0f), &kfloat);
-			int k = (int)std::floor(kfloat);
-
-			uVec(0) = 1;
-			uVec(1) = u;
-			uVec(2) = u*u;
-			uVec(3) = u*u*u;
-			for (int idx = k; idx < k + 4; idx++) {
-				G(0, idx - k) = cps[idx](0);
-				G(1, idx - k) = cps[idx](1);
-				G(2, idx - k) = cps[idx](2);
-			}
-			Eigen::Vector3f p = G*B*uVec;
-			uVec1(0) = 0;
-			uVec1(1) = 1;
-			uVec1(2) = 2*u;
-			uVec1(3) = 3*u*u;
-			Eigen::Vector3f p1 = G*B*uVec1;
-			Eigen::Vector3f p1norm = p1;
-			p1norm.normalize();
-			uVec2(0) = 0;
-			uVec2(1) = 0;
-			uVec2(2) = 2;
-			uVec2(3) = 6*u;
-			Eigen::Vector3f p2 = G*B*uVec2;
-			Eigen::Vector3f p2norm = p2;
-			p2norm.normalize();
-			Eigen::Vector3f p1xp2 = p1.cross(p2);
-			p1xp2.normalize();
-
-			Eigen::Vector3f T = p1norm;
-			Eigen::Vector3f BiNorm = p1xp2;
-			Eigen::Vector3f N = BiNorm.cross(T);
-			T *= .15;
-			BiNorm *= .15;
-			N *= .15;
-
-			glBegin(GL_LINE_STRIP);
-			glColor3f(1.0f, 0.0f, 0.0f);
-			glVertex3fv(p.data());
-			glVertex3f((p+T)(0), (p+T)(1), (p+T)(2));
-			glEnd();
-
-			glBegin(GL_LINE_STRIP);
-			glColor3f(0.0f, 1.0f, 0.0f);
-			glVertex3fv(p.data());
-			glVertex3f((p+N)(0), (p+N)(1), (p+N)(2));
-			glEnd();
-
-			glBegin(GL_LINE_STRIP);
-			glColor3f(0.0f, 0.0f, 1.0f);
-			glVertex3fv(p.data());
-			glVertex3f((p+BiNorm)(0), (p+BiNorm)(1), (p+BiNorm)(2));
-			glEnd();
-	}
 
 	//////////////////////////////////////////////////////
 	// Now draw the shape using modern OpenGL
@@ -321,7 +202,7 @@ void drawGL()
 	// Bind the program
 	prog.bind();
 	
-	// Send projection matrix (same for all bunnies)
+	// Send projection matrix (same for all objects)
 	glUniformMatrix4fv(prog.getUniform("P"), 1, GL_FALSE, P.topMatrix().data());
 	
 	// Apply some transformations to the modelview matrix.
@@ -354,7 +235,10 @@ void drawGL()
 	p1 <<  1.0f, 0.0f, 0.0f;
 	
 	MV.pushMatrix();
-	helicopter2.draw(prog, MV, t);
+	helicopter.draw(prog, MV, t);
+	if (keyToggles['k']) {
+		helicopter.drawKeyFrames(prog, MV);
+	}
 	/*
 	MV.pushMatrix();
 	MV.translate(p0);
