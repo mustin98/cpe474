@@ -31,26 +31,24 @@ void Shape::init() {
 }
 
 void Shape::draw(Program &prog, MatrixStack &MV, float t) {
-   float angle = fmod(t*5, M_PI*2);
+   float angle = fmod(t*15.0f, (float)M_PI*2.0f);
 
-   MV.pushMatrix();
-   //Eigen::Matrix4f R = Eigen::Matrix4f::Identity();
-   //R.block<3,3>(0,0) = q0.toRotationMatrix();
-   //MV.multMatrix(R);
    for (vector<Component>::iterator it = objs.begin(); it != objs.end(); ++it) {
       MV.pushMatrix();
-
+      //Eigen::Matrix4f R = Eigen::Matrix4f::Identity();
+      //R.block<3,3>(0,0) = q0.toRotationMatrix();
+      //MV.multMatrix(R);
+      
       // Last transform done first
       if (it->spinning) {
          MV.translate(it->center);
-         MV.rotate(angle * 2.5, it->axis);
+         MV.rotate(angle, it->axis);
          MV.translate(-it->center);
       }
       glUniformMatrix4fv(prog.getUniform("MV"), 1, GL_FALSE, MV.topMatrix().data());
       it->obj.draw(prog.getAttribute("vertPos"), prog.getAttribute("vertNor"), -1);
       MV.popMatrix();
    }  
-   MV.popMatrix();
 }
 
 Shape::Component::Component() : 
