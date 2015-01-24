@@ -66,10 +66,10 @@ void initGL()
 	z_axis << 0, 0, 1;
 
 	helicopter.init();
-	helicopter.addCP(Eigen::Vector3f(0, 0, 0), Eigen::AngleAxisf(180.0f/180.0f*M_PI, y_axis));
-	helicopter.addCP(Eigen::Vector3f(2, 0, 0), Eigen::AngleAxisf(180.0f/180.0f*M_PI, x_axis));
-	helicopter.addCP(Eigen::Vector3f(0, 2, 2), Eigen::AngleAxisf(180.0f/180.0f*M_PI, z_axis));
-	helicopter.addCP(Eigen::Vector3f(-1.5, -.8, -1), Eigen::AngleAxisf(180.0f/180.0f*M_PI, y_axis));
+	helicopter.addCP(Eigen::Vector3f(0, 0, 0), Eigen::AngleAxisf(90.0f/180.0f*M_PI, y_axis));
+	helicopter.addCP(Eigen::Vector3f(0, 2, -2), Eigen::AngleAxisf(30.0f/180.0f*M_PI, z_axis));
+	helicopter.addCP(Eigen::Vector3f(2, 0, 0), Eigen::AngleAxisf(15.0f/180.0f*M_PI, x_axis));
+	helicopter.addCP(Eigen::Vector3f(-1.5, -.8, 1), Eigen::AngleAxisf(-90.0f/180.0f*M_PI, y_axis));
 
 	
 	//////////////////////////////////////////////////////
@@ -235,10 +235,11 @@ void drawGL()
 	p1 <<  1.0f, 0.0f, 0.0f;
 	
 	MV.pushMatrix();
-	helicopter.draw(prog, MV, t);
 	if (keyToggles['k']) {
 		helicopter.drawKeyFrames(prog, MV);
 	}
+	helicopter.draw(prog, MV, t);
+	
 	/*
 	MV.pushMatrix();
 	MV.translate(p0);

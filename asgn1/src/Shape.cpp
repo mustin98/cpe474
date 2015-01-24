@@ -25,7 +25,6 @@ void Shape::addObj(const string &meshName, Eigen::Vector3f center, Eigen::Vector
 
 void Shape::addCP(Eigen::Vector3f pt, Eigen::AngleAxisf rot) {
    if (cps.size() == 0) {
-      frames.push_back(KeyFrame(pt, rot));
       for (int i = 0; i < 4; i++)
          cps.push_back(pt);
    }
@@ -33,6 +32,7 @@ void Shape::addCP(Eigen::Vector3f pt, Eigen::AngleAxisf rot) {
       vector<Eigen::Vector3f>::iterator it = cps.end();
       cps.insert(it-2, pt);
    }
+   frames.push_back(KeyFrame(pt, rot));
 }
 
 void Shape::init() {
@@ -79,20 +79,42 @@ void Shape::drawSpline() {
 void Shape::drawKeyFrames(Program &prog, MatrixStack &MV) {
    for (vector<KeyFrame>::iterator it = frames.begin(); it != frames.end(); ++it) {
       MV.pushMatrix();
-      
+      MV.translate(it->pos);
+      Eigen::Matrix4f R = Eigen::Matrix4f::Identity();
+      R.block<3,3>(0,0) = it->q.toRotationMatrix();
+      MV.multMatrix(R);
+      for (vector<Component>::iterator it2 = objs.begin(); it2 != objs.end(); ++it2) {
+         glUniformMatrix4fv(prog.getUniform("MV"), 1, GL_FALSE, MV.topMatrix().data());
+         it2->obj.draw(prog.getAttribute("vertPos"), prog.getAttribute("vertNor"), -1);
+      }
       MV.popMatrix();
    }
 }
 
 void Shape::draw(Program &prog, MatrixStack &MV, float t) {
    float angle = fmod(t*15.0f, (float)M_PI*2.0f);
+   float kfloat;
+   float u = fmod(t, (float)(frames.size() - 1));
+   int k = (int)std::floor(kfloat);
+   Eigen::Matrix4f B;
+   Eigen::MatrixXf G(3,4);
+   Eigen::Vector3f uVec;
+   B = getCatmullMatrix();
+   uVec = getUVec(u);
+   
+   for (int idx = k; idx < k + 4; idx++) {
+      G(0, idx - k) = cps[idx](0);
+      G(1, idx - k) = cps[idx](1);
+      G(2, idx - k) = cps[idx](2);
+   }
+   Eigen::Vector3f p = G*B*uVec;
 
    for (vector<Component>::iterator it = objs.begin(); it != objs.end(); ++it) {
       MV.pushMatrix();
       //Eigen::Matrix4f R = Eigen::Matrix4f::Identity();
       //R.block<3,3>(0,0) = q0.toRotationMatrix();
       //MV.multMatrix(R);
-      
+      MV.translate(p);
       // Last transform done first
       if (it->spinning) {
          MV.translate(it->center);
@@ -102,7 +124,7 @@ void Shape::draw(Program &prog, MatrixStack &MV, float t) {
       glUniformMatrix4fv(prog.getUniform("MV"), 1, GL_FALSE, MV.topMatrix().data());
       it->obj.draw(prog.getAttribute("vertPos"), prog.getAttribute("vertNor"), -1);
       MV.popMatrix();
-   }  
+   }
 }
 
 Shape::Component::Component() : 
