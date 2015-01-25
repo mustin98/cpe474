@@ -195,7 +195,7 @@ void Shape::buildTable() {
 }
 
 float Shape::t2s(float t) {
-   float tNorm = fmod(t, T_MAX) / T_MAX;
+  float tNorm = fmod(t, (float)T_MAX) / T_MAX;
    float sNorm = tNorm;
    float s = usTable.back().second * sNorm;
 
