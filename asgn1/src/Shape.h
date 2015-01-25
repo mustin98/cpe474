@@ -34,7 +34,7 @@ private:
          Eigen::Vector3f center;
          Eigen::Vector3f axis;
          int matID;
-      };
+   };
    class KeyFrame {
       public:
          KeyFrame(Eigen::Vector3f pos, Eigen::Quaternionf q);
@@ -54,7 +54,7 @@ private:
             0,  1,  4, -3,
             0,  0, -1,  1;
       return B * 0.5;
-   }
+   };
    static Eigen::Vector4f getUVec(float u) { return Eigen::Vector4f(1, u, u*u, u*u*u); };
    static Eigen::Vector4f getUVecP(float u) { return Eigen::Vector4f(0, 1, 2*u, 3*u*u); };
    static Eigen::Vector4f getUVecPP(float u) { return Eigen::Vector4f(0, 0, 2, 6*u); };
