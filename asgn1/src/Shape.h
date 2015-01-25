@@ -2,6 +2,9 @@
 #ifndef _SHAPE_H_
 #define _SHAPE_H_
 
+#define T_MAX 5.0
+
+#include <utility>
 #include "ShapeObj.h"
 #include "MatrixStack.h"
 #include "Program.h"
@@ -32,13 +35,16 @@ private:
       };
    class KeyFrame {
       public:
-         KeyFrame(Eigen::Vector3f pos, Eigen::AngleAxisf rot);
+         KeyFrame(Eigen::Vector3f pos, Eigen::Quaternionf q);
          virtual ~KeyFrame();
 
          Eigen::Vector3f pos;
          Eigen::Quaternionf q;
    };
-
+   
+   void buildTable();
+   float t2s(float t);
+   float s2u(float s);
    static Eigen::Matrix4f getCatmullMatrix() {
       Eigen::Matrix4f B;
       B <<  0, -1,  2, -1,
@@ -53,7 +59,7 @@ private:
 
    std::vector<Component> objs;
    std::vector<KeyFrame> frames;
-   std::vector<Eigen::Vector3f> cps;
+   std::vector<std::pair<float,float> > usTable;
 };
 
 #endif

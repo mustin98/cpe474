@@ -305,7 +305,7 @@ void drawGL()
 				G(2, idx - k) = cps[idx](2);
 			}
 			Eigen::Vector3f p = G*B*uVec;
-			uVec1(0) = 0;
+			/*uVec1(0) = 0;
 			uVec1(1) = 1;
 			uVec1(2) = 2*u;
 			uVec1(3) = 3*u*u;
@@ -345,7 +345,7 @@ void drawGL()
 			glColor3f(0.0f, 0.0f, 1.0f);
 			glVertex3fv(p.data());
 			glVertex3f((p+BiNorm)(0), (p+BiNorm)(1), (p+BiNorm)(2));
-			glEnd();
+			glEnd();*/
 		}
 		else if (type == BASIS) {
 			B = getBSplineMatrix();

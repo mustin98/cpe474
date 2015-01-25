@@ -66,10 +66,13 @@ void initGL()
 	z_axis << 0, 0, 1;
 
 	helicopter.init();
-	helicopter.addCP(Eigen::Vector3f(0, 0, 0), Eigen::AngleAxisf(90.0f/180.0f*M_PI, y_axis));
-	helicopter.addCP(Eigen::Vector3f(0, 2, -2), Eigen::AngleAxisf(30.0f/180.0f*M_PI, z_axis));
-	helicopter.addCP(Eigen::Vector3f(2, 0, 0), Eigen::AngleAxisf(15.0f/180.0f*M_PI, x_axis));
-	helicopter.addCP(Eigen::Vector3f(-1.5, -.8, 1), Eigen::AngleAxisf(-90.0f/180.0f*M_PI, y_axis));
+	helicopter.addCP(Eigen::Vector3f(0, 0, 0), Eigen::AngleAxisf(135.0f/180.0f*M_PI, y_axis));
+	helicopter.addCP(Eigen::Vector3f(5, 0, 0), Eigen::AngleAxisf(180.0f/180.0f*M_PI, y_axis));
+	helicopter.addCP(Eigen::Vector3f(3, 1, 0), Eigen::AngleAxisf(270.0f/180.0f*M_PI, y_axis));
+	helicopter.addCP(Eigen::Vector3f(2.5, 5, 0), Eigen::AngleAxisf(45.0f/180.0f*M_PI, z_axis));
+	helicopter.addCP(Eigen::Vector3f(-1, -2, -2), Eigen::AngleAxisf(270.0f/180.0f*M_PI, y_axis));
+	helicopter.addCP(Eigen::Vector3f(-2, 0, -5), Eigen::AngleAxisf(180.0f/180.0f*M_PI, y_axis));
+	helicopter.addCP(Eigen::Vector3f(0, 1, -2), Eigen::AngleAxisf(90.0f/180.0f*M_PI, y_axis));
 
 	
 	//////////////////////////////////////////////////////
@@ -179,17 +182,7 @@ void drawGL()
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
 	glRasterPos2f(5.0f, 5.0f);
-	char str[256];
-	sprintf(str, "Rotation: %s%s%s -> %s%s%s",
-			(keyToggles['x'] ? "x" : "_"),
-			(keyToggles['y'] ? "y" : "_"),
-			(keyToggles['z'] ? "z" : "_"),
-			(keyToggles['X'] ? "X" : "_"),
-			(keyToggles['Y'] ? "Y" : "_"),
-			(keyToggles['Z'] ? "Z" : "_"));
-	for(int i = 0; i < strlen(str); ++i) {
-		glutBitmapCharacter(GLUT_BITMAP_8_BY_13, str[i]);
-	}
+
 	glPopMatrix();
 	glMatrixMode(GL_PROJECTION);
 	glPopMatrix();
@@ -205,68 +198,11 @@ void drawGL()
 	// Send projection matrix (same for all objects)
 	glUniformMatrix4fv(prog.getUniform("P"), 1, GL_FALSE, P.topMatrix().data());
 	
-	// Apply some transformations to the modelview matrix.
-	// Each helicopter should get a different transformation.
-	
-	// Alpha is the linear interpolation parameter between 0 and 1
-	float alpha = std::fmod(t, 1.0f);
-	
-	// The axes of rotatio for the source and target bunnies
-	Eigen::Vector3f axis0, axis1;
-	axis0(0) = keyToggles['x'] ? 1.0 : 0.0f;
-	axis0(1) = keyToggles['y'] ? 1.0 : 0.0f;
-	axis0(2) = keyToggles['z'] ? 1.0 : 0.0f;
-	axis1(0) = keyToggles['X'] ? 1.0 : 0.0f;
-	axis1(1) = keyToggles['Y'] ? 1.0 : 0.0f;
-	axis1(2) = keyToggles['Z'] ? 1.0 : 0.0f;
-	if(axis0.norm() > 0.0f) {
-		axis0.normalize();
-	}
-	if(axis1.norm() > 0.0f) {
-		axis1.normalize();
-	}
-	
-	Eigen::Quaternionf q0, q1;
-	q0 = Eigen::AngleAxisf(90.0f/180.0f*M_PI, axis0);
-	q1 = Eigen::AngleAxisf(90.0f/180.0f*M_PI, axis1);
-	
-	Eigen::Vector3f p0, p1;
-	p0 << -1.0f, 0.0f, 0.0f;
-	p1 <<  1.0f, 0.0f, 0.0f;
-	
 	MV.pushMatrix();
 	if (keyToggles['k']) {
 		helicopter.drawKeyFrames(prog, MV);
 	}
 	helicopter.draw(prog, MV, t);
-	
-	/*
-	MV.pushMatrix();
-	MV.translate(p0);
-	Eigen::Matrix4f R = Eigen::Matrix4f::Identity();
-	R.block<3,3>(0,0) = q0.toRotationMatrix();
-	MV.multMatrix(R);
-	glUniformMatrix4fv(prog.getUniform("MV"), 1, GL_FALSE, MV.topMatrix().data());
-	helicopter.draw(prog.getAttribute("vertPos"), prog.getAttribute("vertNor"), -1);
-	MV.popMatrix();
-	
-	MV.pushMatrix();
-	MV.translate(p1);
-	R.block<3,3>(0,0) = q1.toRotationMatrix();
-	MV.multMatrix(R);
-	glUniformMatrix4fv(prog.getUniform("MV"), 1, GL_FALSE, MV.topMatrix().data());
-	helicopter.draw(prog.getAttribute("vertPos"), prog.getAttribute("vertNor"), -1);
-	MV.popMatrix();
-
-	MV.pushMatrix();
-	Eigen::Vector3f interp((1-alpha)*p0 + alpha*p1);
-	MV.translate(interp);
-	R.block<3,3>(0,0) = q0.slerp(alpha, q1).toRotationMatrix();
-	MV.multMatrix(R);
-	glUniformMatrix4fv(prog.getUniform("MV"), 1, GL_FALSE, MV.topMatrix().data());
-	helicopter.draw(prog.getAttribute("vertPos"), prog.getAttribute("vertNor"), -1);
-	MV.popMatrix();
-	*/
 	
 	// Unbind the program
 	prog.unbind();

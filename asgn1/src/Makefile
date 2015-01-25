@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS=-ansi -pedantic -Wno-deprecated
+CFLAGS=-ansi -pedantic -Wno-deprecated -g -o a1
 INC=-I$(EIGEN3_INCLUDE_DIR)
 LIB=-DGL_GLEXT_PROTOTYPES -lglut -lGL -lGLU
 LIB_OSX=-framework GLUT -framework OpenGL
