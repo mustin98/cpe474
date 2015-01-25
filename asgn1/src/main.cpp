@@ -30,16 +30,16 @@ int height = 1;
 Program prog;
 Camera camera;
 Shape helicopter;
+Eigen::Vector3f light = Eigen::Vector3f(0, 0, 2);
 
 void loadScene()
 {
 	t = 0.0f;
 	keyToggles['c'] = true;
-	
-	helicopter.addObj("../models/helicopter_body1.obj");
-	helicopter.addObj("../models/helicopter_body2.obj");
-	helicopter.addObj("../models/helicopter_prop1.obj", Eigen::Vector3f(-0.0133, 0.4819, 0), Eigen::Vector3f(0,1,0));
-	helicopter.addObj("../models/helicopter_prop2.obj", Eigen::Vector3f(0.6228, 0.1179, 0.1365), Eigen::Vector3f(0,0,1));
+	helicopter.addObj("../models/helicopter_body1.obj", 0);
+	helicopter.addObj("../models/helicopter_body2.obj", 1);
+	helicopter.addObj("../models/helicopter_prop1.obj", Eigen::Vector3f(-0.0133, 0.4819, 0), Eigen::Vector3f(0,1,0), 2);
+	helicopter.addObj("../models/helicopter_prop2.obj", Eigen::Vector3f(0.6228, 0.1179, 0.1365), Eigen::Vector3f(0,0,1), 2);
 	prog.setShaderNames("simple_vert.glsl", "simple_frag.glsl");
 }
 
@@ -82,6 +82,13 @@ void initGL()
 	prog.init();
 	prog.addUniform("P");
 	prog.addUniform("MV");
+	prog.addUniform("V");
+	prog.addUniform("lightPos");
+	prog.addUniform("camPos");
+	prog.addUniform("mat.dColor");
+	prog.addUniform("mat.sColor");
+	prog.addUniform("mat.aColor");
+	prog.addUniform("mat.shine");
 	prog.addAttribute("vertPos");
 	prog.addAttribute("vertNor");
 	
@@ -133,7 +140,7 @@ void drawGL()
 	camera.applyProjectionMatrix(&P);
 	MV.pushMatrix();
 	camera.applyViewMatrix(&MV);
-	
+
 	//////////////////////////////////////////////////////
 	// Draw origin frame using old-style OpenGL
 	// (before binding the program)
@@ -197,8 +204,10 @@ void drawGL()
 	
 	// Send projection matrix (same for all objects)
 	glUniformMatrix4fv(prog.getUniform("P"), 1, GL_FALSE, P.topMatrix().data());
-	
+	glUniformMatrix4fv(prog.getUniform("V"), 1, GL_FALSE, MV.topMatrix().data());
 	MV.pushMatrix();
+	glUniform3fv(prog.getUniform("lightPos"), 1, light.data());
+	glUniform3fv(prog.getUniform("camPos"), 1, camera.translations.data());
 	if (keyToggles['k']) {
 		helicopter.drawKeyFrames(prog, MV);
 	}

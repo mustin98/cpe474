@@ -13,8 +13,8 @@ class Shape {
 public:
    Shape();
    virtual ~Shape();
-   void addObj(const std::string &meshName);
-   void addObj(const std::string &meshName, Eigen::Vector3f center, Eigen::Vector3f axis);
+   void addObj(const std::string &meshName, int matID);
+   void addObj(const std::string &meshName, Eigen::Vector3f center, Eigen::Vector3f axis, int matID);
    void init();
    void draw(Program &prog, MatrixStack &MV, float t);
    void drawKeyFrames(Program &prog, MatrixStack &MV);
@@ -24,14 +24,16 @@ public:
 private:
    class Component {
       public:
-         Component();
-         Component(Eigen::Vector3f center, Eigen::Vector3f axis);
+         Component(int matID);
+         Component(Eigen::Vector3f center, Eigen::Vector3f axis, int matID);
          virtual ~Component();
+         void setMaterial(Program &prog);
 
          ShapeObj obj;
          bool spinning;
          Eigen::Vector3f center;
          Eigen::Vector3f axis;
+         int matID;
       };
    class KeyFrame {
       public:

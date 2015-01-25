@@ -9,15 +9,15 @@ Shape::Shape() {}
 
 Shape::~Shape() {}
 
-void Shape::addObj(const string &meshName) {
-   Component toAdd;
+void Shape::addObj(const string &meshName, int matID) {
+   Component toAdd(matID);
 
    toAdd.obj.load(meshName);
    objs.push_back(toAdd);
 }
 
-void Shape::addObj(const string &meshName, Eigen::Vector3f center, Eigen::Vector3f axis) {
-   Component toAdd(center, axis);
+void Shape::addObj(const string &meshName, Eigen::Vector3f center, Eigen::Vector3f axis, int matID) {
+   Component toAdd(center, axis, matID);
 
    toAdd.obj.load(meshName);
    objs.push_back(toAdd);
@@ -57,7 +57,7 @@ void Shape::drawSpline() {
       Eigen::Vector3f cp = frames[i].pos;
       glVertex3f(cp(0), cp(1), cp(2));
    }
-   glEnd(); 
+   glEnd();
    
    glLineWidth(1.0f);
    if(ncps >= 4) {
@@ -69,7 +69,7 @@ void Shape::drawSpline() {
             G(0,idx - i) = frames[idx].pos(0);
             G(1,idx - i) = frames[idx].pos(1);
             G(2,idx - i) = frames[idx].pos(2);
-         }     
+         }
          glBegin(GL_LINE_STRIP);
          glColor3f(1.0f, 0.0f, 1.0f);
          for (float u = 0; u < 1; u += 0.01) {
@@ -91,6 +91,7 @@ void Shape::drawKeyFrames(Program &prog, MatrixStack &MV) {
       MV.multMatrix(R);
       for (vector<Component>::iterator it2 = objs.begin(); it2 != objs.end(); ++it2) {
          glUniformMatrix4fv(prog.getUniform("MV"), 1, GL_FALSE, MV.topMatrix().data());
+         it2->setMaterial(prog);
          it2->obj.draw(prog.getAttribute("vertPos"), prog.getAttribute("vertNor"), -1);
       }
       MV.popMatrix();
@@ -142,6 +143,7 @@ void Shape::draw(Program &prog, MatrixStack &MV, float t) {
          MV.translate(-it->center);
       }
       glUniformMatrix4fv(prog.getUniform("MV"), 1, GL_FALSE, MV.topMatrix().data());
+      it->setMaterial(prog);
       it->obj.draw(prog.getAttribute("vertPos"), prog.getAttribute("vertNor"), -1);
       MV.popMatrix();
    }
@@ -216,17 +218,42 @@ float Shape::s2u(float s) {
    return u;
 }
 
-Shape::Component::Component() : 
-   spinning(false)
+Shape::Component::Component(int matID) : 
+   spinning(false),
+   matID(matID)
 {
 }
-Shape::Component::Component(Eigen::Vector3f center, Eigen::Vector3f axis) :
+Shape::Component::Component(Eigen::Vector3f center, Eigen::Vector3f axis, int matID) :
    spinning(true),
    center(center),
-   axis(axis)
+   axis(axis),
+   matID(matID)
 {
 }
 Shape::Component::~Component() {}
+
+void Shape::Component::setMaterial(Program &prog) {
+   switch (matID) {
+      case 0: // shiny blue plastic
+         glUniform3f(prog.getUniform("mat.dColor"), 0.0, 0.08, 0.5);
+         glUniform3f(prog.getUniform("mat.sColor"), 0.14, 0.14, 0.4);
+         glUniform3f(prog.getUniform("mat.aColor"), 0.02, 0.02, 0.1);
+         glUniform1f(prog.getUniform("mat.shine"), 120.0f);
+         break;
+      case 1: // shiny green plastic
+         glUniform3f(prog.getUniform("mat.dColor"), 0.0, 0.5, 0.08);
+         glUniform3f(prog.getUniform("mat.sColor"), 0.14, 0.4, 0.14);
+         glUniform3f(prog.getUniform("mat.aColor"), 0.02, 0.1, 0.02);
+         glUniform1f(prog.getUniform("mat.shine"), 120.0f);
+         break;
+      case 2: // dull grey
+         glUniform3f(prog.getUniform("mat.dColor"), 0.3, 0.3, 0.4);
+         glUniform3f(prog.getUniform("mat.sColor"), 0.3, 0.3, 0.4);
+         glUniform3f(prog.getUniform("mat.aColor"), 0.13, 0.13, 0.14);
+         glUniform1f(prog.getUniform("mat.shine"), 4.0f);
+         break;
+   }
+}
 
 Shape::KeyFrame::KeyFrame(Eigen::Vector3f pos, Eigen::Quaternionf q) :
    pos(pos),
