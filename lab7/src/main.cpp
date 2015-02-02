@@ -41,19 +41,28 @@ void loadScene()
 	b.setZero();
 	A.block<1,4>(0,0) << 0.0f, 0.0f, 0.0f, 1.0f;
 	b(0) = 0.0f;
-	A.block<1,4>(1,0) << 0.0f, 0.0f, 1.0f, 0.0f;
+	
+	A.block<1,4>(1,0) << 0.0f, 0.0f, 0.0f, 0.0f;
 	b(1) = 0.0f;
-	A.block<1,4>(2,0) << 1.0f, 1.0f, 1.0f, 1.0f;
-	b(2) = 1.0f;
-	A.block<1,4>(3,0) << 3.0f, 2.0f, 1.0f, 0.0f;
+	
+	A.block<1,4>(2,0) << 0.4f*0.4f*0.4f, 0.4f*0.4f, 0.4f, 1.0f;
+	A.block<1,4>(2,4) << -0.4f*-0.4f*-0.4f, -0.4f*-0.4f, -0.4f, -1.0f;
+	b(2) = 0.0f;
+
+	A.block<1,4>(3,0) << 3*0.4f*0.4f*0.4f, 2*0.4f*0.4f, 0.4f, 1.0f;
+	A.block<1,4>(3,4) << -3*.04f*0.04f*0.04f, -2*0.04f*0.4f, -0.4f, 0.0f;
 	b(3) = 0.0f;
-	A.block<1,4>(4,4) << 0.0f, 0.0f, 0.0f, 1.0f;
-	b(4) = 0.0f;
-	A.block<1,4>(5,4) << 0.0f, 0.0f, 1.0f, 0.0f;
+	
+	A.block<1,4>(4,4) << 0.5f*0.5f*0.5f, 0.5f*0.5f, 0.5f, 1.0f;
+	b(4) = 0.2f;
+	
+	A.block<1,4>(5,4) << 3*0.5f*0.5f, 2*0.5f, 0.5f, 0.0f;
 	b(5) = 0.0f;
+	
 	A.block<1,4>(6,4) << 1.0f, 1.0f, 1.0f, 1.0f;
 	b(6) = 1.0f;
-	A.block<1,4>(7,4) << 3.0f, 2.0f, 1.0f, 0.0f;
+	
+	A.block<1,4>(7,4) << 3*0.5f*0.5f, 2*0.5f, 0.5f, 0.0f;
 	b(7) = 0.0f;
 	cout << A << endl;
 	cout << b << endl;
@@ -123,6 +132,40 @@ void drawGL()
 	glVertex2f(1.0f, 0.0f);
 	glVertex2f(1.0f, 1.0f);
 	glVertex2f(0.0f, 1.0f);
+	glEnd();
+
+	glBegin(GL_LINE_STRIP);
+	for (float x = 0.0f; x < 1.0f; x += 0.01) {
+		if (x <= xmid) {
+			glColor3f(1.0,0,0);
+			glVertex2f(x, c0(0) * x*x*x + c0(1)*x*x+c0(2)*x+c0(3));
+		} else {
+			glColor3f(0,1.0,0);
+			glVertex2f(x, c1(0) * x*x*x + c1(1)*x*x+c1(2)*x+c1(3));
+		}
+	}
+	glEnd();
+
+	glPointSize(5);
+	glBegin(GL_POINTS);
+	float slope, y;
+	float x = std::max(0.0f, std::min(mouse(0), 1.0f));
+	if (x <= xmid && x >= 0.0f) {
+		y = c0(0) * x*x*x + c0(1)*x*x+c0(2)*x+c0(3);
+		slope = 3*c0(0) *x*x + 2*c0(1)*x+c0(2);
+		glColor3f(1.0, 1.0, 1.0);
+		glVertex2f(x, y);
+	} else if (x > xmid && x <= 1.0f) {
+		y = c1(0) * x*x*x + c1(1)*x*x+c1(2)*x+c1(3);
+		slope = 3*c1(0) *x*x + 2*c1(1)*x+c1(2);
+		glColor3f(1.0, 1.0, 1.0);
+		glVertex2f(x, c1(0) * x*x*x + c1(1)*x*x+c1(2)*x+c1(3));
+	}
+	glEnd();
+
+	glBegin(GL_LINE_STRIP);
+	glVertex2f(x-0.1, y-0.1*slope);
+	glVertex2f(x+0.1, y+0.1*slope);
 	glEnd();
 	//
 	// Draw cubics here
