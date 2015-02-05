@@ -42,7 +42,7 @@ void loadScene()
 	A.block<1,4>(0,0) << 0.0f, 0.0f, 0.0f, 1.0f;
 	b(0) = 0.0f;
 	
-	A.block<1,4>(1,0) << 0.0f, 0.0f, 0.0f, 0.0f;
+	A.block<1,4>(1,0) << 0.0f, 0.0f, 1.0f, 0.0f;
 	b(1) = 0.0f;
 	
 	A.block<1,4>(2,0) << pow(0.4f,3), pow(0.4f,2), 0.4f, 1.0f;
@@ -62,7 +62,7 @@ void loadScene()
 	A.block<1,4>(6,4) << 1.0f, 1.0f, 1.0f, 1.0f;
 	b(6) = 1.0f;
 	
-	A.block<1,4>(7,4) << 3*pow(0.5f,2), 2*0.5f, 1.0f, 0.0f;
+	A.block<1,4>(7,4) << 3, 2, 1.0f, 0.0f;
 	b(7) = 0.0f;
 	cout << A << endl;
 	cout << b << endl;
