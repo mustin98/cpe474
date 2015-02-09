@@ -1,0 +1,7 @@
+echo \*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\ REMINDER: DELETE THIS FILE BEFORE TURNIN \"rm run a.out\" \*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*
+echo removing old a2
+rm a2
+echo compiling...
+make
+echo running with arguments \<MESH_FILE\> \<ATTACHMENT_FILE\> \<SKELETON_FILE\>
+./a.out
