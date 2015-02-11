@@ -16,7 +16,6 @@
 #include "Camera.h"
 #include "MatrixStack.h"
 #include "ShapeObj.h"
-#include "Shape.h"
 
 using namespace std;
 
@@ -31,15 +30,16 @@ char *attachfile, *skelfile;
 
 Program prog;
 Camera camera;
-Shape cheb;
+ShapeObj cheb;
 Eigen::Vector3f light = Eigen::Vector3f(0, 0, 2);
 
 void loadScene()
 {
 	t = 0.0f;
 	keyToggles['c'] = true;
-	cheb.addObj(meshfile, 0);
+	cheb.load(meshfile);
 	cheb.loadBones(attachfile);
+	cout << "loading animation"<<endl;
 	cheb.loadAnimation(skelfile);
 	prog.setShaderNames("simple_vert.glsl", "simple_frag.glsl");
 }
@@ -68,7 +68,6 @@ void initGL()
 
 	cheb.init();
 
-	
 	//////////////////////////////////////////////////////
 	// Intialize the shaders
 	//////////////////////////////////////////////////////
@@ -83,8 +82,20 @@ void initGL()
 	prog.addUniform("mat.sColor");
 	prog.addUniform("mat.aColor");
 	prog.addUniform("mat.shine");
+	prog.addUniform("M");
+	prog.addUniform("M0");
+
 	prog.addAttribute("vertPos");
 	prog.addAttribute("vertNor");
+	prog.addAttribute("bones0");
+	prog.addAttribute("bones1");
+	prog.addAttribute("bones2");
+	prog.addAttribute("bones3");
+	prog.addAttribute("weights0");
+	prog.addAttribute("weights1");
+	prog.addAttribute("weights2");
+	prog.addAttribute("weights3");
+	prog.addAttribute("numBones");
 	
 	//////////////////////////////////////////////////////
 	// Final check for errors
@@ -198,8 +209,20 @@ void drawGL()
 	MV.pushMatrix();
 	glUniform3fv(prog.getUniform("lightPos"), 1, light.data());
 	glUniform3fv(prog.getUniform("camPos"), 1, camera.translations.data());
-	cheb.draw(prog, MV, t);
 	
+	MV.pushMatrix();
+	glUniformMatrix4fv(prog.getUniform("MV"), 1, GL_FALSE, MV.topMatrix().data());
+	cheb.setMaterial(0, prog.getUniform("mat.dColor"),
+			              prog.getUniform("mat.sColor"),
+			              prog.getUniform("mat.aColor"),
+			              prog.getUniform("mat.shine"));
+	cheb.animate(t, 10.0f, prog.getUniform("M"), prog.getUniform("M0"));
+
+	cheb.draw(prog.getAttribute("bones0"), prog.getAttribute("bones1"), prog.getAttribute("bones2"), prog.getAttribute("bones3"),
+				 prog.getAttribute("weights0"), prog.getAttribute("weights1"), prog.getAttribute("weights2"), prog.getAttribute("weights3"),
+				 prog.getAttribute("numBones"), prog.getAttribute("vertPos"), prog.getAttribute("vertNor"), -1);
+	MV.popMatrix();
+
 	// Unbind the program
 	prog.unbind();
 
