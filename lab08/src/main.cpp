@@ -21,6 +21,7 @@
 #include "MatrixStack.h"
 #include "Shape.h"
 #include "Texture.h"
+#include "Link.h"
 
 using namespace std;
 
@@ -31,6 +32,9 @@ Camera camera;
 Program progSimple;
 Program progTex;
 Shape shape;
+Link root;
+Link lShoulder, rShoulder;
+Link lArm, rArm;
 Texture texture;
 Eigen::Vector2f mouse(-1.0f, -1.0f);
 int modifiers;
@@ -42,6 +46,11 @@ void loadScene()
 	texture.setFilename("metal_texture_15_by_wojtar_stock.jpg");
 	progSimple.setShaderNames("simple_vert.glsl", "simple_frag.glsl");
 	progTex.setShaderNames("tex_vert.glsl", "tex_frag.glsl");
+	root.init(&shape, NULL, 0);
+	lShoulder.init(&shape, &root, -.5);
+	rShoulder.init(&shape, &root, .5);
+	lArm.init(&shape, &lShoulder, -1);
+	rArm.init(&shape, &rShoulder, 1);
 }
 
 void initGL()
@@ -143,7 +152,7 @@ void drawGL()
 	glUniformMatrix4fv(progTex.getUniform("P"), 1, GL_FALSE, P.topMatrix().data());
 	MV.pushMatrix();
 	glUniformMatrix4fv(progTex.getUniform("MV"), 1, GL_FALSE, MV.topMatrix().data());
-	shape.draw(&progTex);
+	root.draw(MV, &progTex);
 	MV.popMatrix();
 	texture.unbind();
 	progTex.unbind();
@@ -181,9 +190,13 @@ void mouseMotionGL(int x, int y)
 		//
 		// Use dx and dy to change the joint angles
 		//
-		cout << dx << " " << dy << endl;
+		//cout << dx << " " << dy << endl;
 		mouse(0) = x;
 		mouse(1) = y;
+		lShoulder.angle += dx;
+		rShoulder.angle += dx;
+		lArm.angle += dy;
+		rArm.angle += dy;
 	}
 }
 
