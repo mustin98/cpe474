@@ -54,7 +54,7 @@ struct CostFunctor {
 };
 
 int main(int argc, char** argv) {
-  google::InitGoogleLogging(argv[0]);
+  //google::InitGoogleLogging(argv[0]);
 
   // The variable to solve for with its initial value. It will be
   // mutated in place by the solver.
@@ -70,18 +70,19 @@ int main(int argc, char** argv) {
   // Set up the only cost function (also known as residual). This uses
   // auto-differentiation to obtain the derivative (jacobian).
   CostFunction* cost_function =
-      new AutoDiffCostFunction<CostFunctor, 1, 2>(new CostFunctor);
+   new AutoDiffCostFunction<CostFunctor, 1, 2>(new CostFunctor);
   problem.AddResidualBlock(cost_function, NULL, &x[0]);
 
   // Run the solver!
   Solver::Options options;
-  options.minimizer_progress_to_stdout = true;
+  options.linear_solver_type = ceres::DENSE_QR;
+  //options.minimizer_progress_to_stdout = true;
   Solver::Summary summary;
   Solve(options, &problem, &summary);
 
-  std::cout << summary.BriefReport() << "\n";
+  /*std::cout << summary.BriefReport() << "\n";
   std::cout << "x0 : " << initial_x1 << " -> " << x[0] << "\n"
-            << "x1 : " << initial_x2 << " -> " << x[1] << "\n";
+            << "x1 : " << initial_x2 << " -> " << x[1] << "\n";*/
   return 0;
 }
 //0, 0       -> -0.501361, -0.501361
