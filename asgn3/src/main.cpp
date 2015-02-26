@@ -117,10 +117,12 @@ void solveJointAngles() {
    Solver::Summary summary;
 
    if (IKType > 0) {
+      int neg = -1;
       for (int link = 1; link < 5; link++) {
          problem.AddResidualBlock(
-          new AutoDiffCostFunction<AngleCostFunctor, 1, 5>(new AngleCostFunctor(link, IKType == 1 ? 0 : 180)),
+          new AutoDiffCostFunction<AngleCostFunctor, 1, 5>(new AngleCostFunctor(link, IKType == 1 ? 0 : neg*180)),
           NULL, &x[0]);
+         neg *= -1;
       }
    }
    Solve(options, &problem, &summary);
