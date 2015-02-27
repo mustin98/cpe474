@@ -254,7 +254,7 @@ void simTimerGL(int value)
 	if(keyToggles[' ']) {
 		stepper.step(particles);
 	}
-	glutTimerFunc(5, simTimerGL, 0);
+	glutTimerFunc(1, simTimerGL, 0);
 }
 
 int main(int argc, char **argv)
