@@ -20,8 +20,7 @@
 #include "Camera.h"
 #include "MatrixStack.h"
 #include "Shape.h"
-#include "Particle.h"
-#include "TimeStepper.h"
+#include "Scene.h"
 #include "HUD.h"
 
 using namespace std;
@@ -32,53 +31,36 @@ bool keyToggles[256] = {false};
 Camera camera;
 Program prog;
 Program progSimple;
-Shape shape;
-vector<Particle*> particles;
-TimeStepper stepper;
+Scene *scene;
 float tDisp;
 float tDispPrev;
 float fps;
+float tSim;
+float sps;
 
 void loadScene()
 {
 	tDisp = 0.0f;
 	tDispPrev = 0.0f;
 	fps = 0.0f;
-	keyToggles['c'] = true;
+	tSim = 0.0f;
+	sps = 0.0f;
+	keyToggles['c'] = false;
 
-	camera.setTranslations(Eigen::Vector3f(0.0f, 0.0f, 20.0f));
+	camera.setTranslations(Eigen::Vector3f(0.0f, 0.0f, 1.5f));
 	progSimple.setShaderNames("simple_vert.glsl", "simple_frag.glsl");
 	prog.setShaderNames("phong_vert.glsl", "phong_frag.glsl");
-	prog.setVerbose(false);
-	shape.loadMesh("sphere2.obj");
+	prog.setVerbose(true);
 	
-	stepper.h = 1e-2;
-	
-	Particle *p0 = new Particle(&shape);
-	Particle *p1 = new Particle(&shape);
-	
-	particles.push_back(p0);
-	particles.push_back(p1);
-	
-	p0->r = 0.25f;
-	p0->m = 1.0;
-	p0->x << 3.0, 0.0, 0.0;
-	p0->v << 0.0, 5.0, 0.0;
-	
-	p1->r = 0.25f;
-	p1->m = 1.0;
-	p1->x << -3.0, 0.0, 0.0;
-	p1->v << 0.0, -5.0, 0.0;
-	
-	for(int i = 0; i < (int)particles.size(); ++i) {
-		particles[i]->tare();
-	}
+	scene = new Scene();
+	scene->load();
+	scene->tare();
 }
 
 void initGL()
 {
 	// Set background color
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClearColor(0.1f, 0.2f, 0.4f, 1.0f);
 	// Enable z-buffer test
 	glEnable(GL_DEPTH_TEST);
 	
@@ -93,7 +75,7 @@ void initGL()
 	prog.addAttribute("vertNor");
 	prog.addAttribute("vertTex");
 	
-	shape.init();
+	scene->init();
 	
 	GLSL::checkVersion();
 }
@@ -105,7 +87,7 @@ void reshapeGL(int w, int h)
 	height = h;
 	glViewport(0, 0, (GLsizei)w, (GLsizei)h);
 	float aspect = w/(float)h;
-	camera.setPerspective(aspect, 45.0f/180.0f*M_PI, 1.0f, 1000.0f);
+	camera.setPerspective(aspect, 45.0f/180.0f*M_PI, 0.01f, 100.0f);
 	HUD::setWidthHeight(w, h);
 }
 
@@ -141,10 +123,10 @@ void drawGL()
 	glUniformMatrix4fv(progSimple.getUniform("P"), 1, GL_FALSE, P.topMatrix().data());
 	glUniformMatrix4fv(progSimple.getUniform("MV"), 1, GL_FALSE, MV.topMatrix().data());
 	glLineWidth(2.0f);
-	float x0 = -5.0f;
-	float x1 = 5.0f;
-	float y0 = -5.0f;
-	float y1 = 5.0f;
+	float x0 = -0.5f;
+	float x1 = 0.5f;
+	float z0 = -0.5f;
+	float z1 = 0.5f;
 	int gridSize = 10;
 	glLineWidth(1.0f);
 	glBegin(GL_LINES);
@@ -152,38 +134,37 @@ void drawGL()
 		if(i == gridSize/2) {
 			glColor3f(0.8f, 0.8f, 0.8f);
 		} else {
-			glColor3f(0.2f, 0.2f, 0.2f);
+			glColor3f(0.4f, 0.4f, 0.4f);
 		}
 		float x = x0 + i / (float)gridSize * (x1 - x0);
-		glVertex2f(x, y0);
-		glVertex2f(x, y1);
+		glVertex3f(x, 0.0f, z0);
+		glVertex3f(x, 0.0f, z1);
 	}
 	for(int i = 1; i < gridSize; ++i) {
 		if(i == gridSize/2) {
 			glColor3f(0.8f, 0.8f, 0.8f);
 		} else {
-			glColor3f(0.2f, 0.2f, 0.2f);
+			glColor3f(0.4f, 0.4f, 0.4f);
 		}
-		float y = y0 + i / (float)gridSize * (y1 - y0);
-		glVertex2f(x0, y);
-		glVertex2f(x1, y);
+		float z = z0 + i / (float)gridSize * (z1 - z0);
+		glVertex3f(x0, 0.0f, z);
+		glVertex3f(x1, 0.0f, z);
 	}
 	glEnd();
+	glColor3f(0.4f, 0.4f, 0.4f);
 	glBegin(GL_LINE_LOOP);
-	glVertex3f(x0, y0, 0.0f);
-	glVertex3f(x1, y0, 0.0f);
-	glVertex3f(x1, y1, 0.0f);
-	glVertex3f(x0, y1, 0.0f);
+	glVertex3f(x0, 0.0f, z0);
+	glVertex3f(x1, 0.0f, z0);
+	glVertex3f(x1, 0.0f, z1);
+	glVertex3f(x0, 0.0f, z1);
 	glEnd();
 	progSimple.unbind();
 	
-	// Draw particles
+	// Draw scene
 	prog.bind();
 	glUniformMatrix4fv(prog.getUniform("P"), 1, GL_FALSE, P.topMatrix().data());
 	MV.pushMatrix();
-	for(int i = 0; i < (int)particles.size(); ++i) {
-		particles[i]->draw(MV, prog);
-	}
+	scene->draw(MV, prog);
 	MV.popMatrix();
 	prog.unbind();
 	
@@ -192,7 +173,7 @@ void drawGL()
 	glColor4f(0, 1, 0, 1);
 	sprintf(str, "fps: %.1f", fps);
 	HUD::drawString(10, HUD::getHeight()-15, str);
-	sprintf(str, "t: %.2f   type: %d", stepper.t, stepper.type);
+	sprintf(str, "t: %.2f s   Each step takes %.1f ms", scene->getTime(), sps);
 	HUD::drawString(10, 10, str);
 	
 	// Double buffer
@@ -215,12 +196,21 @@ void mouseMotionGL(int x, int y)
 
 void quit()
 {
-	// http://stackoverflow.com/questions/594089/does-stdvector-clear-do-delete-free-memory-on-each-element
-	while(!particles.empty()) {
-		delete particles.back();
-		particles.pop_back();
-	}
+	delete scene;
 	exit(0);
+}
+
+void step()
+{
+	float tSim0 = glutGet(GLUT_ELAPSED_TIME); // in ms
+	
+	scene->step();
+
+	float tSim1 = glutGet(GLUT_ELAPSED_TIME); // in ms
+	float dt = (tSim1 - tSim0);
+	float sps1 = dt;
+	float a = 0.2f;
+	sps = (1.0f - a) * sps + a * sps1;
 }
 
 void keyboardGL(unsigned char key, int x, int y)
@@ -232,13 +222,10 @@ void keyboardGL(unsigned char key, int x, int y)
 			quit();
 			break;
 		case 'h':
-			stepper.step(particles);
+			step();
 			break;
 		case 'r':
-			stepper.reset(particles);
-			break;
-		case 't':
-			stepper.type = (stepper.type + 1) % 3;
+			scene->reset();
 			break;
 	}
 }
@@ -252,9 +239,9 @@ void drawTimerGL(int value)
 void simTimerGL(int value)
 {
 	if(keyToggles[' ']) {
-		stepper.step(particles);
+		step();
 	}
-	glutTimerFunc(2, simTimerGL, 0);
+	glutTimerFunc(1, simTimerGL, 0);
 }
 
 int main(int argc, char **argv)
