@@ -247,53 +247,45 @@ void Cloth::step(double h, const Eigen::Vector3d &grav)
 	//
 	// IMPLEMENT ME!
 	//
+	Eigen::Matrix3d I = Eigen::Matrix3d::Identity();
+	for (int p = 0; p < particles.size(); p++) {
+		Particle *pt = particles[p];
+		if (pt->i != -1) {
+			M.block<3,3>(pt->i,pt->i) = pt->m * I;
+			v.segment<3>(pt->i) = pt->v;
+			f.segment<3>(pt->i) = pt->m * grav;
+		}
+	}
 	for (int spring = 0; spring < springs.size(); spring++) {
 		Spring *s = springs[spring];
-		Eigen::VectorXd ft;
-		Eigen::Vector3d g;
 		Eigen::MatrixXd Kt;
-		Kt.resize(n,n);
-		ft.resize(n);
-		Kt.setZero();
-		ft.setZero();
 
-		g << 0, -9.8, 0;
 		Eigen::Matrix3d KMat;
 		Eigen::Vector3d fVec;
 		KMat.setZero();
 		fVec.setZero();
-		Eigen::Matrix3d I = Eigen::Matrix3d::Identity();
 		
 		Eigen::Vector3d dx = s->p1->x - s->p0->x;
 		double l = dx.norm();
 		
 		fVec = s->K * (l - s->L) * (dx / l);
-		double dScale = (dx.transpose() * dx)(0,0);
-		KMat = -s->K / l*l * ((l- s->L) * (dScale)*I + (1 - (l-s->L)/l) * (dx * dx.transpose()));
-		for (int p = 0; p < particles.size(); p++) {
-			Particle *pt = particles[p];
-			if (pt->i != -1) {
-				M.block<3,3>(pt->i,pt->i) = pt->m * I;
-				v.segment<3>(pt->i) = pt->v;
-				ft.segment<3>(pt->i) = pt->m * g;
-			}
-		}
+		double dScalar = (dx.transpose() * dx)(0,0);
+		KMat = -s->K / (l*l) * ((l- s->L)/l * (dScalar)*I + (1 - (l-s->L)/l) * (dx * dx.transpose()));
+		
 		// positive particle
 		if (s->p0->i != -1) {
-			ft.segment<3>(s->p0->i) = fVec;
-			Kt.block<3,3>(s->p0->i,s->p0->i) = KMat;
+			f.segment<3>(s->p0->i) += fVec;
+			K.block<3,3>(s->p0->i,s->p0->i) += KMat;
 		}
 		// negative particle
 		if (s->p1->i != -1) {
-			ft.segment<3>(s->p1->i) = -fVec;
-				Kt.block<3,3>(s->p1->i,s->p1->i) = KMat;
+			f.segment<3>(s->p1->i) -= fVec;
+			K.block<3,3>(s->p1->i,s->p1->i) += KMat;
 			if (s->p0->i != -1) {
-				Kt.block<3,3>(s->p0->i,s->p1->i) = -KMat;
-				Kt.block<3,3>(s->p1->i,s->p0->i) = -KMat;
+				K.block<3,3>(s->p0->i,s->p1->i) -= KMat;
+				K.block<3,3>(s->p1->i,s->p0->i) -= KMat;
 			}
 		}
-		f += ft;
-		K += Kt;
 	}
 	Eigen::MatrixXd A = M - h*h * K;
 	Eigen::VectorXd b = M*v + h*f;

@@ -25,8 +25,8 @@ void Scene::load()
 	
 	grav << 0.0, -9.8, 0.0;
 	
-	int rows = 4;
-	int cols = 4;
+	int rows = 10;
+	int cols = 10;
 	double mass = 0.1;
 	double stiffness = 1e2;
 	Eigen::Vector3d x00(-0.25, 0.5, 0.0);
