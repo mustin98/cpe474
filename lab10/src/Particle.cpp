@@ -137,8 +137,8 @@ void Particle::rebirth(float t)
 	//
 	
 	if (keyToggles['g']) {
-		x << randFloat(0.1f, 0.15f), randFloat(0.1f, 0.15f), randFloat(-0.1f, 0.1f);
-		v << randFloat(-5.0f, 0.1f), randFloat(0.0f, 5.0f), randFloat(-2.5f, 2.5f);
+		x << randFloat(0.3f, 0.5f), randFloat(0.1f, 0.4f), randFloat(-0.1f, 0.1f);
+		v << randFloat(-4.0f, -1.0f), randFloat(1.0f, 5.0f), randFloat(-2.5f, 2.5f);
 	} else {
 		x << randFloat(-0.1f, 0.1f), randFloat(-0.1f, 0.1f), randFloat(-0.1f, 0.1f);
 		v << randFloat(-15.0f, 15.0f), randFloat(0.0f, 15.0f), randFloat(-15.0f, 15.0f);
@@ -169,9 +169,9 @@ void Particle::update(float t, float h)
 
 	Eigen::Vector3f f(0.0f, 0.0f, 0.0f);
 	if (keyToggles['g']) {
-		float r = sqrt(pow(x.x(),2) + pow(x.y(),2)  + pow(x.z(),2));
-		float C = .5f;
-		if (r > 0.0001) {
+		float r = x.norm();
+		float C = 2.5f;
+		if (r > 0.1) {
 			f = -(C*m)/(r*r)*(x/r);
 		}
 	}
