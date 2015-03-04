@@ -32,8 +32,8 @@ void Scene::load()
 	
 	grav << 0.0, -9.8, 0.0;
 	
-	int rows = 10;
-	int cols = 10;
+	int rows = 20;
+	int cols = 20;
 	double mass = 0.1;
 	double stiffness = 1e2;
 	double dz = 0.00;

@@ -265,8 +265,10 @@ void Cloth::step(double h, const Eigen::Vector3d &grav, const std::vector<Partic
 		for(int j = 0; j < (int)spheres.size(); ++j) {
 			// IMPLEMENT ME
 			double dist = (particles[i]->x - spheres[j]->x).norm();
-			if (dist < particles[i]->r + spheres[j]->r) {
+			double radii = particles[i]->r + spheres[j]->r;
+			if (dist < radii) {
 				Spring *spring = new Spring(particles[i], spheres[j]);
+				spring->L = radii;
 				collisions.push_back(spring);
 			}
 		}
