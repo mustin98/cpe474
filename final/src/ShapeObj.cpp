@@ -26,6 +26,14 @@ void ShapeObj::load(const string &meshName, const string &mtlBasePath) {
 	}
 }
 
+void ShapeObj::load(const string &meshName) {
+	// Load geometry
+	string err = tinyobj::LoadObj(shapes, mats, meshName.c_str());
+	if(!err.empty()) {
+		cerr << err << endl;
+	}
+}
+
 void ShapeObj::init() {
 	// Send the position array to the GPU
 	const vector<float> &posBuf = shapes[0].mesh.positions;

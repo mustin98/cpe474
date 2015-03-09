@@ -17,6 +17,7 @@
 #include "MatrixStack.h"
 #include "ShapeObj.h"
 #include "Shape.h"
+#include "Texture.h"
 
 using namespace std;
 
@@ -28,15 +29,23 @@ int width = 1;
 int height = 1;
 
 Program prog;
+Program progTex;
 Camera camera;
 Shape rocket;
+ShapeObj ground;
+Texture groundTex;
 Eigen::Vector3f light = Eigen::Vector3f(0, 0, 2);
 
 void loadScene() {
 	t = 0.0f;
 	keyToggles['c'] = true;
 	rocket.addObj("../models/roket.obj", "../models");
+
+	ground.load("../models/ground.obj");
+	groundTex.setFilename("../models/grass_tex.jpg");
+
 	prog.setShaderNames("simple_vert.glsl", "simple_frag.glsl");
+	progTex.setShaderNames("tex_vert.glsl", "tex_frag.glsl");
 }
 
 void initGL() {
@@ -60,6 +69,8 @@ void initGL() {
 	y_axis << 0, 1, 0;
 	z_axis << 0, 0, 1;
 
+	ground.init();
+	groundTex.init();
 	rocket.init();
 	rocket.addCP(Eigen::Vector3f(0, 0, 0), Eigen::AngleAxisf(90.0f/180.0f*M_PI, y_axis));
 	rocket.addCP(Eigen::Vector3f(5, 0, 0), Eigen::AngleAxisf(180.0f/180.0f*M_PI, y_axis));
@@ -69,9 +80,9 @@ void initGL() {
 	rocket.addCP(Eigen::Vector3f(-2, 0, -5), Eigen::AngleAxisf(180.0f/180.0f*M_PI, y_axis));
 	rocket.addCP(Eigen::Vector3f(0, 1, -2), Eigen::AngleAxisf(90.0f/180.0f*M_PI, y_axis));
 
-	// obj has huge coordinates so we need to rescale
-	rocket.rescale(0.0035);
+	// obj has huge coordinates so we need to rescale and center it
 	rocket.center(Eigen::Vector3f(0, 0, 260.2751));
+	rocket.rescale(0.001);
 
 	
 	//////////////////////////////////////////////////////
@@ -90,6 +101,13 @@ void initGL() {
 	prog.addUniform("shine");
 	prog.addAttribute("vertPos");
 	prog.addAttribute("vertNor");
+
+	progTex.init();
+	progTex.addAttribute("vertPos");
+	progTex.addAttribute("vertTex");
+	progTex.addUniform("P");
+	progTex.addUniform("MV");
+	progTex.addUniform("colorTexture");
 	
 	//////////////////////////////////////////////////////
 	// Final check for errors
@@ -198,20 +216,32 @@ void drawGL() {
 	
 	// Bind the program
 	prog.bind();
-	
+
 	// Send projection matrix (same for all objects)
 	glUniformMatrix4fv(prog.getUniform("P"), 1, GL_FALSE, P.topMatrix().data());
 	glUniformMatrix4fv(prog.getUniform("V"), 1, GL_FALSE, MV.topMatrix().data());
 	MV.pushMatrix();
 	glUniform3fv(prog.getUniform("lightPos"), 1, light.data());
 	glUniform3fv(prog.getUniform("camPos"), 1, camera.translations.data());
+
+	/*
 	if (keyToggles['k']) {
 		rocket.drawKeyFrames(prog, MV);
 	}
 	rocket.draw(prog, MV, t);
+	*/
 	
 	// Unbind the program
 	prog.unbind();
+
+	// Draw textured shapes
+	progTex.bind();
+	groundTex.bind(progTex.getUniform("colorTexture"), 0);
+	glUniformMatrix4fv(progTex.getUniform("P"), 1, GL_FALSE, P.topMatrix().data());
+	glUniformMatrix4fv(progTex.getUniform("MV"), 1, GL_FALSE, MV.topMatrix().data());
+	ground.draw(progTex.getAttribute("vertPos"), -1, progTex.getAttribute("vertTex"));
+	groundTex.unbind(0);
+	progTex.unbind();
 
 	//////////////////////////////////////////////////////
 	// Cleanup

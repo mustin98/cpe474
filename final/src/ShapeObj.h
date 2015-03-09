@@ -10,6 +10,7 @@ public:
 	ShapeObj();
 	virtual ~ShapeObj();
 	void load(const std::string &meshName, const std::string &mtlBasePath);
+	void load(const std::string &meshName);
 	void init();
 	void draw(int h_pos, int h_nor, int h_tex) const;
 	
