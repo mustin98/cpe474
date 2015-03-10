@@ -115,7 +115,7 @@ void Shape::drawKeyFrames(Program &prog, MatrixStack &MV) {
 
 void Shape::draw(Program &prog, MatrixStack &MV, float t) {
    buildTable();
-   float angle = fmod(t*15.0f, (float)M_PI*2.0f);
+   float angle = fmod(t*10.0f, (float)M_PI*2.0f);
 
    float uu = s2u(t2s(t));
    // Convert from concatenated u to the usual u between 0 and 1.

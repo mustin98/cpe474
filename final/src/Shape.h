@@ -28,6 +28,17 @@ public:
    void center(Eigen::Vector3f center);
 
 private:
+   class ControlBox{
+      public:
+         ControlBox();
+         virtual ~ControlBox();
+         
+
+         Eigen::Vector3f pos;
+         Eigen::Vecotr3f dimensions;
+         Eigen::Vector3f cp;
+         bool active;
+   };
    class Component {
       public:
          Component();

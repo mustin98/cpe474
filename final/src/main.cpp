@@ -39,7 +39,7 @@ Eigen::Vector3f light = Eigen::Vector3f(0, 0, 2);
 void loadScene() {
 	t = 0.0f;
 	keyToggles['c'] = true;
-	rocket.addObj("../models/roket.obj", "../models");
+	rocket.addObj("../models/roket.obj", "../models", Eigen::Vector3f(0,0,0), Eigen::Vector3f(0,0,1));
 
 	ground.load("../models/ground.obj");
 	groundTex.setFilename("../models/grass_tex.jpg");
@@ -228,8 +228,9 @@ void drawGL() {
 	if (keyToggles['k']) {
 		rocket.drawKeyFrames(prog, MV);
 	}
-	rocket.draw(prog, MV, t);
 	*/
+	rocket.draw(prog, MV, t);
+	
 	
 	// Unbind the program
 	prog.unbind();
