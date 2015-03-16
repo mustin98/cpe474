@@ -168,6 +168,7 @@ void Shape::draw(Program &prog, MatrixStack &MV, float t) {
       G(2, idx - k) = cps[idx](2);
    }
    Eigen::Vector3f p = G*B*uVec;
+   pos = p;
    tangent = G*B*uVecP;
    tangent.normalize();
 

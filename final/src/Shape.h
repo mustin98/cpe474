@@ -31,9 +31,11 @@ public:
    void xMove(float dx);
    void yMove(float dy);
    void zMove(float dz);
+   Eigen::Vector3f tangent; // Direction
+   Eigen::Vector3f pos; // position
 
 private:
-   class ControlBox{
+   class ControlBox {
       public:
          ControlBox(Eigen::Vector3f center, Eigen::Vector3f dimensions, bool two);
          virtual ~ControlBox();
@@ -84,7 +86,6 @@ private:
    float v;    // Velocity
    float m;    // Mass
    float g;    // Gravity
-   Eigen::Vector3f tangent; // Direction
    Eigen::Vector3f axis;    // Axis of rotation
    Eigen::Vector3f point;   // Initial direction
    float tangentAngle;      // Rotation angle

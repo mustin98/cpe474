@@ -17,13 +17,14 @@ public:
 	void setFilename(const std::string &f) { filename = f; }
 	void init();
 	void bind(GLint handle, GLint unit);
-	void unbind(GLint unit);
+	void unbind();
 	
 private:
 	std::string filename;
 	int width;
 	int height;
 	GLuint tid;
+	GLint unit;
 	
 };
 

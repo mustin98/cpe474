@@ -57,12 +57,13 @@ void Texture::init()
 
 void Texture::bind(GLint handle, GLint unit)
 {
+	this->unit = unit;
 	glActiveTexture(GL_TEXTURE0 + unit);
 	glBindTexture(GL_TEXTURE_2D, tid);
 	glUniform1i(handle, unit);
 }
 
-void Texture::unbind(GLint unit)
+void Texture::unbind()
 {
 	glActiveTexture(GL_TEXTURE0 + unit);
 	glBindTexture(GL_TEXTURE_2D, 0);

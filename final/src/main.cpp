@@ -17,7 +17,9 @@
 #include "MatrixStack.h"
 #include "ShapeObj.h"
 #include "Shape.h"
+#include "Particle.h"
 #include "Texture.h"
+#include "Obstacle.h"
 
 using namespace std;
 
@@ -25,28 +27,58 @@ bool keyToggles[256] = {false};
 
 float t = 0.0f;
 float tPrev = 0.0f;
+float h = 0.01f;
 int width = 1;
 int height = 1;
 bool inSession = false;
 
 Program prog;
 Program progTex;
+Program progParticle;
 Camera camera;
 Shape rocket;
 ShapeObj ground;
 Texture groundTex;
+Texture sunTex;
+Texture particleTex;
+vector<Particle *> particles;
+vector<Obstacle *> obstacles;
 Eigen::Vector3f light = Eigen::Vector3f(0, 5, -4);
 
 void loadScene() {
 	t = 0.0f;
+	h = 0.01f;
+
 	keyToggles['c'] = true;
 	rocket.addObj("../models/roket.obj", "../models", Eigen::Vector3f(0,0,0), Eigen::Vector3f(0,0,1));
 
 	ground.load("../models/ground.obj");
 	groundTex.setFilename("../models/grass_tex.jpg");
+	
+	sunTex.setFilename("../models/sun.jpg");
+
+	int nObs = 1;
+	for (int i = 0; i < nObs; i++) {
+		Obstacle *o = new Obstacle();
+		obstacles.push_back(o);
+		o->mesh("../models/sphere2.obj", Eigen::Vector3f(2,5,-2));
+	}
+
+	particleTex.setFilename("../models/alpha.jpg");
 
 	prog.setShaderNames("simple_vert.glsl", "simple_frag.glsl");
 	progTex.setShaderNames("tex_vert.glsl", "tex_frag.glsl");
+	progParticle.setShaderNames("particle_vert.glsl", "particle_frag.glsl");
+
+	int n = 250;
+	for(int i = 0; i < n; ++i) {
+		Particle *p = new Particle();
+		particles.push_back(p);
+		p->setProgram(&progParticle);
+		p->setKeyToggles(keyToggles);
+		p->attachTo(&rocket);
+		p->load();
+	}
 }
 
 void initGL() {
@@ -59,12 +91,21 @@ void initGL() {
 	// Enable z-buffer test
 	glEnable(GL_DEPTH_TEST);
 	
+	// Enable alpha blending
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 	//////////////////////////////////////////////////////
 	// Intialize the shapes
 	//////////////////////////////////////////////////////
 	
 	ground.init();
 	groundTex.init();
+	sunTex.init();
+	particleTex.init();
+	for (int i = 0; i < obstacles.size(); i++) {
+		obstacles[i]->init();
+	}
 	rocket.init();
 	// Add ControlBoxes (Position, Dimensions, first/last)
 	rocket.addCB(Eigen::Vector3f(0,0,0), Eigen::Vector3f(1,1,10), true);
@@ -105,6 +146,19 @@ void initGL() {
 	progTex.addUniform("P");
 	progTex.addUniform("MV");
 	progTex.addUniform("colorTexture");
+
+	progParticle.init();
+	progParticle.addUniform("P");
+	progParticle.addUniform("MV");
+	progParticle.addAttribute("vertPos");
+	progParticle.addAttribute("vertTex");
+	progParticle.addUniform("radius");
+	progParticle.addUniform("alphaTexture");
+	progParticle.addUniform("color");
+	
+	for(int i = 0; i < (int)particles.size(); ++i) {
+		particles[i]->init();
+	}
 	
 	//////////////////////////////////////////////////////
 	// Final check for errors
@@ -120,27 +174,29 @@ void reshapeGL(int w, int h) {
 	camera.setAspect((float)width/(float)height);
 }
 
-void drawGL() {
-	// Elapsed time
-	float tCurr = 0.001f*glutGet(GLUT_ELAPSED_TIME); // in seconds
-	if(inSession) {
-		t += (tCurr - tPrev);
+// Sort particles by their z values in camera space
+class ParticleSorter {
+public:
+	bool operator()(const Particle *p0, const Particle *p1) const
+	{
+		// Particle positions in world space
+		const Eigen::Vector3f &x0 = p0->getPosition();
+		const Eigen::Vector3f &x1 = p1->getPosition();
+		// Particle positions in camera space
+		float z0 = V.row(2) * Eigen::Vector4f(x0(0), x0(1), x0(2), 1.0f);
+		float z1 = V.row(2) * Eigen::Vector4f(x1(0), x1(1), x1(2), 1.0f);
+		return z0 < z1;
 	}
-	tPrev = tCurr;
 	
+	Eigen::Matrix4f V; // current camera matrix
+};
+ParticleSorter sorter;
+
+
+void drawGL() {
 	// Clear buffers
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	if(keyToggles['c']) {
-		glEnable(GL_CULL_FACE);
-	} else {
-		glDisable(GL_CULL_FACE);
-	}
-	if(keyToggles['l']) {
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	} else {
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-	}
-	
+
 	//////////////////////////////////////////////////////
 	// Create matrix stacks
 	//////////////////////////////////////////////////////
@@ -214,12 +270,41 @@ void drawGL() {
 
 	// Draw textured shapes
 	progTex.bind();
+	//ground
 	groundTex.bind(progTex.getUniform("colorTexture"), 0);
 	glUniformMatrix4fv(progTex.getUniform("P"), 1, GL_FALSE, P.topMatrix().data());
 	glUniformMatrix4fv(progTex.getUniform("MV"), 1, GL_FALSE, MV.topMatrix().data());
 	ground.draw(progTex.getAttribute("vertPos"), -1, progTex.getAttribute("vertTex"));
-	groundTex.unbind(0);
+	groundTex.unbind();
+	//sun
+	sunTex.bind(progTex.getUniform("colorTexture"), 0);
+	glUniformMatrix4fv(progTex.getUniform("P"), 1, GL_FALSE, P.topMatrix().data());
+	glUniformMatrix4fv(progTex.getUniform("MV"), 1, GL_FALSE, MV.topMatrix().data());
+	obstacles[0]->draw(progTex, MV);
+	sunTex.unbind();
 	progTex.unbind();
+
+	if ((obstacles[0]->pos - rocket.pos).norm() < 1) {
+		inSession = false;
+	}
+
+	// Sort the particles by Z
+	sorter.V = MV.topMatrix();
+	sort(particles.begin(), particles.end(), sorter);
+	
+	// Draw particles
+	progParticle.bind();
+	particleTex.bind(progParticle.getUniform("alphaTexture"), 0);
+	glUniformMatrix4fv(progParticle.getUniform("P"), 1, GL_FALSE, P.topMatrix().data());
+	MV.pushMatrix();
+	for(int i = 0; i < (int)particles.size(); ++i) {
+		particles[i]->draw(&MV);
+	}
+	MV.popMatrix();
+	particleTex.unbind();
+	progParticle.unbind();
+
+	
 
 	//////////////////////////////////////////////////////
 	// Cleanup
@@ -258,6 +343,9 @@ void keyboardGL(unsigned char key, int x, int y) {
 		case 'r': // restart
 			t = 0.0f;
 			inSession = false;
+			for(int i = 0; i < (int)particles.size(); ++i) {
+				particles[i]->reset();
+			}
 			break;
 		case '.': // next ControlBox
 			rocket.switchCB(1);
@@ -299,6 +387,16 @@ void keyboardGL(unsigned char key, int x, int y) {
 }
 
 void timerGL(int value) {
+	// Elapsed time
+	float tCurr = 0.001f*glutGet(GLUT_ELAPSED_TIME); // in seconds
+	float dt = (tCurr - tPrev);
+	if(inSession) {
+		for(int i = 0; i < (int)particles.size(); ++i) {
+			particles[i]->update(t, h);
+		}
+		t += dt;
+	}
+	tPrev = tCurr;
 	glutPostRedisplay();
 	glutTimerFunc(20, timerGL, 0);
 }
