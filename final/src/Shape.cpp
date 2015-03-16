@@ -10,9 +10,9 @@ Shape::Shape() :
    v(0.0),
    m(10.0),
    g(-9.8),
-   tangent(Eigen::Vector3f(0,0,-1)),
+   tangent(Eigen::Vector3f(0,0,1)),
    axis(Eigen::Vector3f(0,1,0)),
-   point(Eigen::Vector3f(0,0,-1)),
+   point(Eigen::Vector3f(0,0,1)),
    tangentAngle(0),
    activeCB(0),
    ncps(0)
@@ -65,18 +65,30 @@ void Shape::switchCB(int change) {
    activeCB = activeCB < 0 ? cbs.size() - 1 : activeCB % cbs.size();
 }
 
+void Shape::xMove(float dx) {
+   for (int i = 0; i < cbs[activeCB].cps.size(); i++) {
+      cbs[activeCB].cps[i](0) += dx;
+      cbs[activeCB].keepInside();
+   }
+}
+
+void Shape::yMove(float dy) {
+   for (int i = 0; i < cbs[activeCB].cps.size(); i++) {
+      cbs[activeCB].cps[i](1) += dy;
+      cbs[activeCB].keepInside();
+   }
+}
+
+void Shape::zMove(float dz) {
+   for (int i = 0; i < cbs[activeCB].cps.size(); i++) {
+      cbs[activeCB].cps[i](2) += dz;
+      cbs[activeCB].keepInside();
+   }
+}
+
 void Shape::drawSpline() {
    fillCPs();
 
-   glPointSize(3.0f);
-   glColor3f(0.0f, 0.0f, 0.0f);
-   glBegin(GL_POINTS);
-   for(int i = 0; i < ncps; ++i) {
-      Eigen::Vector3f cp = cps[i];
-      glVertex3f(cp(0), cp(1), cp(2));
-   }
-   glEnd();
-   
    glLineWidth(1.0f);
    if(ncps >= 4) {
       Eigen::Matrix4f B;
@@ -106,20 +118,33 @@ void Shape::drawCPs() {
    glPointSize(3.0f);
    glColor3f(0.0f, 0.0f, 0.0f);
    glBegin(GL_POINTS);
-   for(int i = 0; i < ncps; ++i) {
+   for (int i = 0; i < ncps; ++i) {
       Eigen::Vector3f cp = cps[i];
       glVertex3f(cp(0), cp(1), cp(2));
    }
    glEnd();
    
+   glLineWidth(1);
    glColor3f(1.0f, 0.5f, 0.5f);
    glBegin(GL_LINE_STRIP);
-   for(int i = 0; i < ncps; ++i) {
+   for (int i = 0; i < ncps; ++i) {
       Eigen::Vector3f cp = cps[i];
       // You can also specify an array by using glVertex3fv()
       glVertex3fv(cp.data());
    }
    glEnd();
+
+   drawCBs();
+}
+
+void Shape::drawCBs() {
+   for (int i = 0; i < cbs.size(); i++) {
+      if (i == activeCB) {
+         cbs[i].draw(true);
+      } else {
+         cbs[i].draw(false);
+      }
+   }
 }
 
 void Shape::draw(Program &prog, MatrixStack &MV, float t) {
@@ -136,7 +161,6 @@ void Shape::draw(Program &prog, MatrixStack &MV, float t) {
    B = getCatmullMatrix();
    uVec = getUVec(u);
    uVecP = getUVecP(u);
-   fillCPs();
    
    for (int idx = k; idx < k + 4; idx++) {
       G(0, idx - k) = cps[idx](0);
@@ -149,17 +173,17 @@ void Shape::draw(Program &prog, MatrixStack &MV, float t) {
 
    for (vector<Component>::iterator it = objs.begin(); it != objs.end(); ++it) {
       // Really should have put this somewhere else...
-      glUniform3f(prog.getUniform("dif"), 0.2, 0.2, 0.3);
-      glUniform3f(prog.getUniform("spec"), 0.1, 0.2, 0.8);
+      glUniform3f(prog.getUniform("dif"), 0.23, 0.3, 0.6);
+      glUniform3f(prog.getUniform("spec"), 0.1, 0.1, 0.1);
       glUniform3f(prog.getUniform("amb"), 0.15, 0.15, 0.15);
       glUniform1f(prog.getUniform("shine"), 20);
       // Last transform done first
       MV.pushMatrix();
       MV.translate(p);
       MV.scale(scale);
-      axis = tangent.cross(point);
+      axis = point.cross(tangent);
       axis.normalize();
-      tangentAngle = acos(tangent.dot(point));
+      tangentAngle = acos(point.dot(tangent));
       Eigen::Quaternionf q;
       q = Eigen::AngleAxisf(tangentAngle, axis);
       Eigen::Matrix4f R = Eigen::Matrix4f::Identity();
@@ -177,6 +201,7 @@ void Shape::draw(Program &prog, MatrixStack &MV, float t) {
    }
 }
 
+// table of u-s values
 void Shape::buildTable() {
    usTable.clear();
    fillCPs();
@@ -222,6 +247,7 @@ void Shape::buildTable() {
    }
 }
 
+// time to arc length
 float Shape::t2s(float t) {
   float tNorm = fmod(t, (float)T_MAX) / T_MAX;
    float sNorm = tNorm;
@@ -230,6 +256,7 @@ float Shape::t2s(float t) {
    return s;
 }
 
+// arc length to u
 float Shape::s2u(float s) {
    pair<float, float> start = usTable[0], end = usTable[1];
    for (int i = 0; i < (int)usTable.size() - 1; i++) {
@@ -264,6 +291,86 @@ Shape::ControlBox::ControlBox(Eigen::Vector3f center, Eigen::Vector3f dimensions
    }
 }
 Shape::ControlBox::~ControlBox() {}
+
+void Shape::ControlBox::draw(bool active) {
+   active ? glColor3f(0.423f, 0.439f, 0.988f) : glColor3f(0.0f, 0.0156f, 0.435f);
+   active ? glLineWidth(4) : glLineWidth(1);
+   /*
+     5-----6
+    /     /|
+   1-----2 |
+   |   p | | 
+   | 4   |-7 
+   |     |/
+   0-----3
+   */
+   Eigen::Vector3f x(dimensions(0)/2.0, 0,0), y(0, dimensions(1)/2.0, 0), z(0,0, dimensions(2)/2.0);
+   Eigen::Vector3f 
+      p5=pos-x+y+z,    p6=pos+x+y+z, 
+   p1=pos-x+y-z,    p2=pos+x+y-z,   
+      p4=pos-x-y+z,    p7=pos+x-y+z, 
+   p0=pos-x-y-z,    p3=pos+x-y-z;
+   // front face
+   glBegin(GL_LINE_STRIP);
+   glVertex3fv(p0.data());
+   glVertex3fv(p1.data());
+   glVertex3fv(p2.data());
+   glVertex3fv(p3.data());
+   glVertex3fv(p0.data());
+   glEnd();
+   // back face
+   glBegin(GL_LINE_STRIP);
+   glVertex3fv(p4.data());
+   glVertex3fv(p5.data());
+   glVertex3fv(p6.data());
+   glVertex3fv(p7.data());
+   glVertex3fv(p4.data());
+   glEnd();
+   // bottom left line
+   glBegin(GL_LINE_STRIP);
+   glVertex3fv(p0.data());
+   glVertex3fv(p4.data());
+   glEnd();
+   // top left line
+   glBegin(GL_LINE_STRIP);
+   glVertex3fv(p1.data());
+   glVertex3fv(p5.data());
+   glEnd();
+   // top right line
+   glBegin(GL_LINE_STRIP);
+   glVertex3fv(p2.data());
+   glVertex3fv(p6.data());
+   glEnd();
+   // bottom right line
+   glBegin(GL_LINE_STRIP);
+   glVertex3fv(p3.data());
+   glVertex3fv(p7.data());
+   glEnd();
+}
+
+void Shape::ControlBox::keepInside() {
+   float xDist = pos(0) - cps[0](0),
+         yDist = pos(1) - cps[0](1),
+         zDist = pos(2) - cps[0](2),
+         xDim = dimensions(0) / 2,
+         yDim = dimensions(1) / 2,
+         zDim = dimensions(2) / 2;
+   if (abs(xDist) > xDim) {
+      for (int i = 0; i < cps.size(); i++) {
+         cps[i](0) += xDist < 0 ? -(abs(xDist)-xDim) : xDist-xDim;
+      }
+   }
+   if (abs(yDist) > yDim) {
+      for (int i = 0; i < cps.size(); i++) {
+         cps[i](1) += yDist < 0 ? -(abs(yDist)-yDim) : yDist-yDim;
+      }
+   }
+   if (abs(zDist) > zDim) {
+      for (int i = 0; i < cps.size(); i++) {
+         cps[i](2) += zDist < 0 ? -(abs(zDist)-zDim) : zDist-zDim;
+      }
+   }
+}
 
 Shape::Component::Component() : 
    spinning(false)

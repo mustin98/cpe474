@@ -27,6 +27,7 @@ float t = 0.0f;
 float tPrev = 0.0f;
 int width = 1;
 int height = 1;
+bool inSession = false;
 
 Program prog;
 Program progTex;
@@ -34,7 +35,7 @@ Camera camera;
 Shape rocket;
 ShapeObj ground;
 Texture groundTex;
-Eigen::Vector3f light = Eigen::Vector3f(0, 0, 2);
+Eigen::Vector3f light = Eigen::Vector3f(0, 5, -4);
 
 void loadScene() {
 	t = 0.0f;
@@ -66,15 +67,15 @@ void initGL() {
 	groundTex.init();
 	rocket.init();
 	// Add ControlBoxes (Position, Dimensions, first/last)
-	rocket.addCB(Eigen::Vector3f(0,0,0), Eigen::Vector3f(0,0,0), true);
-	rocket.addCB(Eigen::Vector3f(1,0,0), Eigen::Vector3f(0,0,0), false);
-	rocket.addCB(Eigen::Vector3f(1,1,0), Eigen::Vector3f(0,0,0), false);
-	rocket.addCB(Eigen::Vector3f(2,2,0), Eigen::Vector3f(0,0,0), false);
-	rocket.addCB(Eigen::Vector3f(3,5,0), Eigen::Vector3f(0,0,0), false);
-	rocket.addCB(Eigen::Vector3f(4,8,0), Eigen::Vector3f(0,0,0), false);
-	rocket.addCB(Eigen::Vector3f(4,3,0), Eigen::Vector3f(0,0,0), false);
-	rocket.addCB(Eigen::Vector3f(5,0,0), Eigen::Vector3f(0,0,0), false);
-	rocket.addCB(Eigen::Vector3f(6,6,0), Eigen::Vector3f(0,0,0), true);
+	rocket.addCB(Eigen::Vector3f(0,0,0), Eigen::Vector3f(1,1,10), true);
+	rocket.addCB(Eigen::Vector3f(1,0,0), Eigen::Vector3f(1,1,10), false);
+	rocket.addCB(Eigen::Vector3f(1,1,0), Eigen::Vector3f(1,1,10), false);
+	rocket.addCB(Eigen::Vector3f(2,2,0), Eigen::Vector3f(1,1,10), false);
+	rocket.addCB(Eigen::Vector3f(3,5,0), Eigen::Vector3f(1,1,10), false);
+	rocket.addCB(Eigen::Vector3f(4,8,0), Eigen::Vector3f(1,1,10), false);
+	rocket.addCB(Eigen::Vector3f(4,3,0), Eigen::Vector3f(1,1,10), false);
+	rocket.addCB(Eigen::Vector3f(5,0,0), Eigen::Vector3f(1,1,10), false);
+	rocket.addCB(Eigen::Vector3f(6,6,0), Eigen::Vector3f(1,1,10), true);
 
 	// obj has huge coordinates so we need to rescale and center it
 	rocket.center(Eigen::Vector3f(0, 0, 260.2751));
@@ -122,7 +123,7 @@ void reshapeGL(int w, int h) {
 void drawGL() {
 	// Elapsed time
 	float tCurr = 0.001f*glutGet(GLUT_ELAPSED_TIME); // in seconds
-	if(keyToggles[' ']) {
+	if(inSession) {
 		t += (tCurr - tPrev);
 	}
 	tPrev = tCurr;
@@ -166,22 +167,7 @@ void drawGL() {
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
 	glLoadMatrixf(MV.topMatrix().data());
-	
-	// Draw frame
-	glLineWidth(2);
-	glBegin(GL_LINES);
-	glColor3f(1, 0, 0);
-	glVertex3f(0, 0, 0);
-	glVertex3f(1, 0, 0);
-	glColor3f(0, 1, 0);
-	glVertex3f(0, 0, 0);
-	glVertex3f(0, 1, 0);
-	glColor3f(0, 0, 1);
-	glVertex3f(0, 0, 0);
-	glVertex3f(0, 0, 1);
-	glEnd();
-	glLineWidth(1);
-	
+
 	if (keyToggles['k']) {
 		rocket.drawSpline();
 	}
@@ -266,14 +252,48 @@ void keyboardGL(unsigned char key, int x, int y) {
 			// ESCAPE
 			exit(0);
 			break;
-		case 't':
-			t = 0.0f;
+		case ' ': // begin
+			inSession = true;
 			break;
-		case '.':
+		case 'r': // restart
+			t = 0.0f;
+			inSession = false;
+			break;
+		case '.': // next ControlBox
 			rocket.switchCB(1);
 			break;
-		case ',':
+		case ',': // prev ControlBox
 			rocket.switchCB(-1);
+			break;
+		case 'm':
+			if(!inSession) {
+				rocket.xMove(0.1);
+			}
+			break;
+		case 'n':
+			if(!inSession) {
+				rocket.xMove(-0.1);
+			}
+			break;
+		case 'y':
+			if(!inSession) {
+				rocket.yMove(0.1);
+			}
+			break;
+		case 'h':
+			if(!inSession) {
+				rocket.yMove(-0.1);
+			}
+			break;
+		case 'j':
+			if(!inSession) {
+				rocket.zMove(0.1);
+			}
+			break;
+		case 'u':
+			if(!inSession) {
+				rocket.zMove(-0.1);
+			}
 			break;
 	}
 }

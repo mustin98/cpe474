@@ -23,19 +23,24 @@ public:
    void draw(Program &prog, MatrixStack &MV, float t);
    void drawSpline();
    void drawCPs();
+   void drawCBs();
    void addCB(Eigen::Vector3f center, Eigen::Vector3f dim, bool two);
    void rescale(float scale);
    void center(Eigen::Vector3f center);
    void switchCB(int change);
+   void xMove(float dx);
+   void yMove(float dy);
+   void zMove(float dz);
 
 private:
    class ControlBox{
       public:
          ControlBox(Eigen::Vector3f center, Eigen::Vector3f dimensions, bool two);
          virtual ~ControlBox();
-         
+         void draw(bool active);
+         void keepInside();
+
          Eigen::Vector3f pos;
-         // x=w, y=h, z=l
          Eigen::Vector3f dimensions;
          std::vector<Eigen::Vector3f> cps;
    };
