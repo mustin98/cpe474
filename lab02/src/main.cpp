@@ -273,17 +273,14 @@ void drawGL()
 			B = getCatmullMatrix();
 			for (int i = 0; i <= ncps - 4 && ncps >= 4; i++) {
 				for (int idx = i; idx < i + 4; idx++) {
-					G(0,idx - i) = cps[idx](0);
-					G(1,idx - i) = cps[idx](1);
-					G(2,idx - i) = cps[idx](2);
+					G(0, idx-i) = cps[idx](0);
+					G(1, idx-i) = cps[idx](1);
+					G(2, idx-i) = cps[idx](2);
 				}		
 				glBegin(GL_LINE_STRIP);
 				glColor3f(1.0f, 0.0f, 1.0f);
 				for (float u = 0; u < 1; u += 0.01) {
-					uVec(0) = 1;
-					uVec(1) = u;
-					uVec(2) = u*u;
-					uVec(3) = u*u*u;
+					uVec << 1, u, u*u, u*u*u;
 					Eigen::Vector3f p = G*B*uVec;
 					
 					// 3 by 1 vector
@@ -305,7 +302,7 @@ void drawGL()
 				G(2, idx - k) = cps[idx](2);
 			}
 			Eigen::Vector3f p = G*B*uVec;
-			/*uVec1(0) = 0;
+			uVec1(0) = 0;
 			uVec1(1) = 1;
 			uVec1(2) = 2*u;
 			uVec1(3) = 3*u*u;
@@ -345,7 +342,7 @@ void drawGL()
 			glColor3f(0.0f, 0.0f, 1.0f);
 			glVertex3fv(p.data());
 			glVertex3f((p+BiNorm)(0), (p+BiNorm)(1), (p+BiNorm)(2));
-			glEnd();*/
+			glEnd();
 		}
 		else if (type == BASIS) {
 			B = getBSplineMatrix();

@@ -62,23 +62,19 @@ void initGL() {
 	// Intialize the shapes
 	//////////////////////////////////////////////////////
 	
-	Eigen::Vector3f x_axis;
-	Eigen::Vector3f y_axis;
-	Eigen::Vector3f z_axis;
-	x_axis << 1, 0, 0;
-	y_axis << 0, 1, 0;
-	z_axis << 0, 0, 1;
-
 	ground.init();
 	groundTex.init();
 	rocket.init();
-	rocket.addCP(Eigen::Vector3f(0, 0, 0), Eigen::AngleAxisf(90.0f/180.0f*M_PI, y_axis));
-	rocket.addCP(Eigen::Vector3f(5, 0, 0), Eigen::AngleAxisf(180.0f/180.0f*M_PI, y_axis));
-	rocket.addCP(Eigen::Vector3f(3, 1, 0), Eigen::AngleAxisf(270.0f/180.0f*M_PI, y_axis));
-	rocket.addCP(Eigen::Vector3f(2.5, 5, 0), Eigen::AngleAxisf(45.0f/180.0f*M_PI, x_axis));
-	rocket.addCP(Eigen::Vector3f(-1, -2, -2), Eigen::AngleAxisf(270.0f/180.0f*M_PI, y_axis));
-	rocket.addCP(Eigen::Vector3f(-2, 0, -5), Eigen::AngleAxisf(180.0f/180.0f*M_PI, y_axis));
-	rocket.addCP(Eigen::Vector3f(0, 1, -2), Eigen::AngleAxisf(90.0f/180.0f*M_PI, y_axis));
+	// Add ControlBoxes (Position, Dimensions, first/last)
+	rocket.addCB(Eigen::Vector3f(0,0,0), Eigen::Vector3f(0,0,0), true);
+	rocket.addCB(Eigen::Vector3f(1,0,0), Eigen::Vector3f(0,0,0), false);
+	rocket.addCB(Eigen::Vector3f(1,1,0), Eigen::Vector3f(0,0,0), false);
+	rocket.addCB(Eigen::Vector3f(2,2,0), Eigen::Vector3f(0,0,0), false);
+	rocket.addCB(Eigen::Vector3f(3,5,0), Eigen::Vector3f(0,0,0), false);
+	rocket.addCB(Eigen::Vector3f(4,8,0), Eigen::Vector3f(0,0,0), false);
+	rocket.addCB(Eigen::Vector3f(4,3,0), Eigen::Vector3f(0,0,0), false);
+	rocket.addCB(Eigen::Vector3f(5,0,0), Eigen::Vector3f(0,0,0), false);
+	rocket.addCB(Eigen::Vector3f(6,6,0), Eigen::Vector3f(0,0,0), true);
 
 	// obj has huge coordinates so we need to rescale and center it
 	rocket.center(Eigen::Vector3f(0, 0, 260.2751));
@@ -189,6 +185,7 @@ void drawGL() {
 	if (keyToggles['k']) {
 		rocket.drawSpline();
 	}
+	rocket.drawCPs();
 
 	// Pop modelview matrix
 	glPopMatrix();
@@ -224,13 +221,7 @@ void drawGL() {
 	glUniform3fv(prog.getUniform("lightPos"), 1, light.data());
 	glUniform3fv(prog.getUniform("camPos"), 1, camera.translations.data());
 
-	/*
-	if (keyToggles['k']) {
-		rocket.drawKeyFrames(prog, MV);
-	}
-	*/
 	rocket.draw(prog, MV, t);
-	
 	
 	// Unbind the program
 	prog.unbind();
@@ -277,6 +268,12 @@ void keyboardGL(unsigned char key, int x, int y) {
 			break;
 		case 't':
 			t = 0.0f;
+			break;
+		case '.':
+			rocket.switchCB(1);
+			break;
+		case ',':
+			rocket.switchCB(-1);
 			break;
 	}
 }

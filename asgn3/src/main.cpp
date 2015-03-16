@@ -74,6 +74,7 @@ struct CostFunctor {
             transform *= trans * rot;
          }
       }
+      // One last translation to reach goal point
       transform *= trans;
       Eigen::Matrix<T,4,1> result;
       result << T(0),T(0),T(0),T(1);

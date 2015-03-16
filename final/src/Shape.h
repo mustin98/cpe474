@@ -2,7 +2,7 @@
 #ifndef _SHAPE_H_
 #define _SHAPE_H_
 
-#define T_MAX 5.0
+#define T_MAX 10.0
 
 #include <utility>
 #include "ShapeObj.h"
@@ -21,23 +21,23 @@ public:
                Eigen::Vector3f axis);
    void init();
    void draw(Program &prog, MatrixStack &MV, float t);
-   void drawKeyFrames(Program &prog, MatrixStack &MV);
    void drawSpline();
-   void addCP(Eigen::Vector3f pt, Eigen::AngleAxisf rot);
+   void drawCPs();
+   void addCB(Eigen::Vector3f center, Eigen::Vector3f dim, bool two);
    void rescale(float scale);
    void center(Eigen::Vector3f center);
+   void switchCB(int change);
 
 private:
    class ControlBox{
       public:
-         ControlBox();
+         ControlBox(Eigen::Vector3f center, Eigen::Vector3f dimensions, bool two);
          virtual ~ControlBox();
          
-
          Eigen::Vector3f pos;
-         Eigen::Vecotr3f dimensions;
-         Eigen::Vector3f cp;
-         bool active;
+         // x=w, y=h, z=l
+         Eigen::Vector3f dimensions;
+         std::vector<Eigen::Vector3f> cps;
    };
    class Component {
       public:
@@ -50,18 +50,11 @@ private:
          Eigen::Vector3f center;
          Eigen::Vector3f axis;
    };
-   class KeyFrame {
-      public:
-         KeyFrame(Eigen::Vector3f pos, Eigen::Quaternionf q);
-         virtual ~KeyFrame();
-
-         Eigen::Vector3f pos;
-         Eigen::Quaternionf q;
-   };
    
    void buildTable();
    float t2s(float t);
    float s2u(float s);
+   void fillCPs();
    static Eigen::Matrix4f getCatmullMatrix() {
       Eigen::Matrix4f B;
       B <<  0, -1,  2, -1,
@@ -75,10 +68,21 @@ private:
    static Eigen::Vector4f getUVecPP(float u) { return Eigen::Vector4f(0, 0, 2, 6*u); };
 
    std::vector<Component> objs;
-   std::vector<KeyFrame> frames;
+   std::vector<ControlBox> cbs;
+   int activeCB; // current controlled ControlBox
+   std::vector<Eigen::Vector3f> cps;
+   int ncps;
    std::vector<std::pair<float,float> > usTable;
    float scale;
    Eigen::Vector3f offset;
+   float vMin; // Minimum velocity
+   float v;    // Velocity
+   float m;    // Mass
+   float g;    // Gravity
+   Eigen::Vector3f tangent; // Direction
+   Eigen::Vector3f axis;    // Axis of rotation
+   Eigen::Vector3f point;   // Initial direction
+   float tangentAngle;      // Rotation angle
 };
 
 #endif
