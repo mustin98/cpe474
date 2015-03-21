@@ -82,10 +82,6 @@ private:
    std::vector<std::pair<float,float> > usTable;
    float scale;
    Eigen::Vector3f offset;
-   float vMin; // Minimum velocity
-   float v;    // Velocity
-   float m;    // Mass
-   float g;    // Gravity
    Eigen::Vector3f axis;    // Axis of rotation
    Eigen::Vector3f point;   // Initial direction
    float tangentAngle;      // Rotation angle

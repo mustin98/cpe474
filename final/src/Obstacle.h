@@ -9,10 +9,9 @@
 
 class Obstacle {
 public:
-   Obstacle();
+   Obstacle(const std::string &meshName);
    virtual ~Obstacle();
-   void mesh(const std::string &meshName,
-             Eigen::Vector3f pos);
+   void moveTo(Eigen::Vector3f pos);
    void init();
    void draw(Program &prog, MatrixStack &MV);
    ShapeObj obj;

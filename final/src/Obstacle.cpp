@@ -5,13 +5,16 @@
 
 using namespace std;
 
-Obstacle::Obstacle() {}
+Obstacle::Obstacle(const std::string &meshName):
+   radius(1)
+{
+   obj.load(meshName);
+}
 
 Obstacle::~Obstacle() {}
 
-void Obstacle::mesh(const std::string &meshName,
-               Eigen::Vector3f pos) {
-   obj.load(meshName);
+void Obstacle::moveTo(Eigen::Vector3f pos) {
+   this->pos = pos;
 }
 void Obstacle::init() {
    obj.init();

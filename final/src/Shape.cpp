@@ -6,10 +6,6 @@
 using namespace std;
 
 Shape::Shape() :
-   vMin(2.0),
-   v(0.0),
-   m(10.0),
-   g(-9.8),
    tangent(Eigen::Vector3f(0,0,1)),
    axis(Eigen::Vector3f(0,1,0)),
    point(Eigen::Vector3f(0,0,1)),
@@ -62,7 +58,7 @@ void Shape::center(Eigen::Vector3f center) {
 
 void Shape::switchCB(int change) {
    activeCB += change;
-   activeCB = activeCB < 0 ? cbs.size() - 1 : activeCB % cbs.size();
+   activeCB = activeCB < 0 ? cbs.size() - 2 : activeCB % (cbs.size()-1);
 }
 
 void Shape::xMove(float dx) {

@@ -31,15 +31,17 @@ float h = 0.01f;
 int width = 1;
 int height = 1;
 bool inSession = false;
+bool gameOver = false;
 
 Program prog;
 Program progTex;
 Program progParticle;
 Camera camera;
 Shape rocket;
-ShapeObj ground;
-Texture groundTex;
+ShapeObj skySphere;
+Texture skySphereTex;
 Texture sunTex;
+Texture earthTex;
 Texture particleTex;
 vector<Particle *> particles;
 vector<Obstacle *> obstacles;
@@ -49,20 +51,28 @@ void loadScene() {
 	t = 0.0f;
 	h = 0.01f;
 
-	keyToggles['c'] = true;
 	rocket.addObj("../models/roket.obj", "../models", Eigen::Vector3f(0,0,0), Eigen::Vector3f(0,0,1));
 
-	ground.load("../models/ground.obj");
-	groundTex.setFilename("../models/grass_tex.jpg");
+	skySphere.load("../models/sphere2.obj");
+	skySphereTex.setFilename("../models/universe-photo.jpg");
 	
 	sunTex.setFilename("../models/sun.jpg");
+	earthTex.setFilename("../models/earth.jpg");
 
-	int nObs = 1;
+	int nObs = 8;
 	for (int i = 0; i < nObs; i++) {
-		Obstacle *o = new Obstacle();
+		Obstacle *o = new Obstacle("../models/sphere2.obj");
 		obstacles.push_back(o);
-		o->mesh("../models/sphere2.obj", Eigen::Vector3f(2,5,-2));
 	}
+	// Set obstacle positions
+	obstacles[0]->moveTo(Eigen::Vector3f(0,  -1,  -1));
+	obstacles[1]->moveTo(Eigen::Vector3f(1,   0.5, 2));
+	obstacles[2]->moveTo(Eigen::Vector3f(1.5, 2.5, 1));
+	obstacles[3]->moveTo(Eigen::Vector3f(3,   5,   1));
+	obstacles[4]->moveTo(Eigen::Vector3f(5,   2,  -3));
+	obstacles[5]->moveTo(Eigen::Vector3f(5,   4,  -2));
+	obstacles[6]->moveTo(Eigen::Vector3f(7,   6,  0));
+	obstacles[7]->moveTo(Eigen::Vector3f(10,   10,  0));
 
 	particleTex.setFilename("../models/alpha.jpg");
 
@@ -99,24 +109,26 @@ void initGL() {
 	// Intialize the shapes
 	//////////////////////////////////////////////////////
 	
-	ground.init();
-	groundTex.init();
+	skySphere.init();
+	skySphereTex.init();
 	sunTex.init();
+	earthTex.init();
 	particleTex.init();
 	for (int i = 0; i < obstacles.size(); i++) {
 		obstacles[i]->init();
 	}
 	rocket.init();
 	// Add ControlBoxes (Position, Dimensions, first/last)
-	rocket.addCB(Eigen::Vector3f(0,0,0), Eigen::Vector3f(1,1,10), true);
-	rocket.addCB(Eigen::Vector3f(1,0,0), Eigen::Vector3f(1,1,10), false);
-	rocket.addCB(Eigen::Vector3f(1,1,0), Eigen::Vector3f(1,1,10), false);
-	rocket.addCB(Eigen::Vector3f(2,2,0), Eigen::Vector3f(1,1,10), false);
-	rocket.addCB(Eigen::Vector3f(3,5,0), Eigen::Vector3f(1,1,10), false);
-	rocket.addCB(Eigen::Vector3f(4,8,0), Eigen::Vector3f(1,1,10), false);
-	rocket.addCB(Eigen::Vector3f(4,3,0), Eigen::Vector3f(1,1,10), false);
-	rocket.addCB(Eigen::Vector3f(5,0,0), Eigen::Vector3f(1,1,10), false);
-	rocket.addCB(Eigen::Vector3f(6,6,0), Eigen::Vector3f(1,1,10), true);
+	rocket.addCB(Eigen::Vector3f(0,-1,0), Eigen::Vector3f(1,1,5), true);
+	rocket.addCB(Eigen::Vector3f(1,0,3), Eigen::Vector3f(1,1,3), false);
+	rocket.addCB(Eigen::Vector3f(1,2,2), Eigen::Vector3f(1,1,2), false);
+	rocket.addCB(Eigen::Vector3f(2,0,0), Eigen::Vector3f(1,1,4), false);
+	rocket.addCB(Eigen::Vector3f(2,2,1), Eigen::Vector3f(1,3,1), false);
+	rocket.addCB(Eigen::Vector3f(4,5,0), Eigen::Vector3f(2,1,2), false);
+	rocket.addCB(Eigen::Vector3f(4,3,-3), Eigen::Vector3f(1,1,3), false);
+	rocket.addCB(Eigen::Vector3f(5,2,0), Eigen::Vector3f(1,1,1), false);
+	rocket.addCB(Eigen::Vector3f(6,6,0), Eigen::Vector3f(1,2,1), false);
+	rocket.addCB(Eigen::Vector3f(10,10,0), Eigen::Vector3f(0,0,0), true);
 
 	// obj has huge coordinates so we need to rescale and center it
 	rocket.center(Eigen::Vector3f(0, 0, 260.2751));
@@ -192,6 +204,14 @@ public:
 };
 ParticleSorter sorter;
 
+void checkCollisions() {
+	for (int i = 0; i < obstacles.size(); i++) {
+ 		if ((rocket.pos - obstacles[i]->pos).norm() < obstacles[i]->radius) {
+ 			inSession = false;
+ 			gameOver = true;
+ 		}
+	}
+}
 
 void drawGL() {
 	// Clear buffers
@@ -270,24 +290,34 @@ void drawGL() {
 
 	// Draw textured shapes
 	progTex.bind();
-	//ground
-	groundTex.bind(progTex.getUniform("colorTexture"), 0);
+	//sky sphere
+	skySphereTex.bind(progTex.getUniform("colorTexture"), 0);
+	MV.pushMatrix();
+	MV.scale(120);
 	glUniformMatrix4fv(progTex.getUniform("P"), 1, GL_FALSE, P.topMatrix().data());
 	glUniformMatrix4fv(progTex.getUniform("MV"), 1, GL_FALSE, MV.topMatrix().data());
-	ground.draw(progTex.getAttribute("vertPos"), -1, progTex.getAttribute("vertTex"));
-	groundTex.unbind();
-	//sun
+	skySphere.draw(progTex.getAttribute("vertPos"), -1, progTex.getAttribute("vertTex"));
+	MV.popMatrix();
+	skySphereTex.unbind();
+	//suns
 	sunTex.bind(progTex.getUniform("colorTexture"), 0);
 	glUniformMatrix4fv(progTex.getUniform("P"), 1, GL_FALSE, P.topMatrix().data());
 	glUniformMatrix4fv(progTex.getUniform("MV"), 1, GL_FALSE, MV.topMatrix().data());
-	obstacles[0]->draw(progTex, MV);
+	for (int i = 0; i < obstacles.size()-1; i++) {
+		obstacles[i]->draw(progTex, MV);
+	}
 	sunTex.unbind();
+	// earth
+	earthTex.bind(progTex.getUniform("colorTexture"), 0);
+	glUniformMatrix4fv(progTex.getUniform("P"), 1, GL_FALSE, P.topMatrix().data());
+	glUniformMatrix4fv(progTex.getUniform("MV"), 1, GL_FALSE, MV.topMatrix().data());
+	obstacles[obstacles.size()-1]->draw(progTex, MV);
+	earthTex.unbind();
 	progTex.unbind();
 
-	if ((obstacles[0]->pos - rocket.pos).norm() < 1) {
-		inSession = false;
+	if (inSession) {
+		checkCollisions();
 	}
-
 	// Sort the particles by Z
 	sorter.V = MV.topMatrix();
 	sort(particles.begin(), particles.end(), sorter);
@@ -337,14 +367,26 @@ void keyboardGL(unsigned char key, int x, int y) {
 			// ESCAPE
 			exit(0);
 			break;
+		case 'p':
+			if (!gameOver) {
+				inSession = !inSession;
+			}
+			break;
 		case ' ': // begin
-			inSession = true;
+			if (!gameOver) {
+				inSession = true;
+				for(int i = 0; i < (int)particles.size(); ++i) {
+					particles[i]->reset();
+				}
+			}
 			break;
 		case 'r': // restart
 			t = 0.0f;
 			inSession = false;
+			gameOver = false;
 			for(int i = 0; i < (int)particles.size(); ++i) {
 				particles[i]->reset();
+				particles[i]->update(t, h);
 			}
 			break;
 		case '.': // next ControlBox
@@ -353,33 +395,33 @@ void keyboardGL(unsigned char key, int x, int y) {
 		case ',': // prev ControlBox
 			rocket.switchCB(-1);
 			break;
-		case 'm':
-			if(!inSession) {
+		case 'b':
+			if(!inSession && !gameOver) {
 				rocket.xMove(0.1);
 			}
 			break;
-		case 'n':
-			if(!inSession) {
+		case 'v':
+			if(!inSession && !gameOver) {
 				rocket.xMove(-0.1);
 			}
 			break;
-		case 'y':
-			if(!inSession) {
+		case 'u':
+			if(!inSession && !gameOver) {
 				rocket.yMove(0.1);
 			}
 			break;
-		case 'h':
-			if(!inSession) {
+		case 'j':
+			if(!inSession && !gameOver) {
 				rocket.yMove(-0.1);
 			}
 			break;
-		case 'j':
-			if(!inSession) {
+		case 'm':
+			if(!inSession && !gameOver) {
 				rocket.zMove(0.1);
 			}
 			break;
-		case 'u':
-			if(!inSession) {
+		case 'n':
+			if(!inSession && !gameOver) {
 				rocket.zMove(-0.1);
 			}
 			break;
@@ -390,7 +432,7 @@ void timerGL(int value) {
 	// Elapsed time
 	float tCurr = 0.001f*glutGet(GLUT_ELAPSED_TIME); // in seconds
 	float dt = (tCurr - tPrev);
-	if(inSession) {
+	if (inSession) {
 		for(int i = 0; i < (int)particles.size(); ++i) {
 			particles[i]->update(t, h);
 		}

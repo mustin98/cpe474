@@ -16,7 +16,7 @@ float randFloat(float l, float h)
 Particle::Particle() :
 	m(1.0f),
 	d(0.0f),
-	x(0.0f, 0.0f, 0.0f),
+	x(0.0f, 10000.0f, 0.0f),
 	v(0.0f, 0.0f, 0.0f),
 	lifespan(1.0f),
 	tEnd(0.0f),
@@ -64,9 +64,6 @@ void Particle::load()
 	indBuf.push_back(1);
 	indBuf.push_back(2);
 	indBuf.push_back(3);
-	
-	// Random initialization
-	rebirth(0.0f);
 }
 
 void Particle::init()
@@ -141,7 +138,7 @@ void Particle::rebirth(float t)
 	v << randFloat(v1(0)-5.0f, v1(0)+5.0f), randFloat(v1(1)-0.0f, v1(1)+0.0f), randFloat(v1(2)-5.0f, v1(2)+5.0f);
 	radius = randFloat(0.05f, 0.08f);
 	d = .05f;
-	lifespan = randFloat(.5f, 1.0f);
+	lifespan = randFloat(.1f, 1.0f);
 	color << randFloat(0.843f, 1.0f), randFloat(0.18f, 0.776f), randFloat(0.1294f, 0.3f), 1.0f;
 	//
 	// </INITIALIZATION>
@@ -176,5 +173,5 @@ void Particle::update(float t, float h) {
 }
 
 void Particle::reset() {
-	tEnd = 0;
+	tEnd = -1;
 }
